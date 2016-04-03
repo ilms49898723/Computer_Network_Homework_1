@@ -16,3 +16,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <ctime>
+
+int main(int argc, char const *argv[])
+{
+    return 0;
+}
