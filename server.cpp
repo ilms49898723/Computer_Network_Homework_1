@@ -16,6 +16,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <ctime>
+#include <cctype>
 
 bool isValidArguments(int argc, char const *argv[]);
 
@@ -34,9 +35,10 @@ bool isValidArguments(int argc, char const *argv[]) {
     if (argc != 2) {
         return false;
     }
-    int port;
-    if (sscanf(argv[1], "%d", &port) != 1) {
-        return false;
+    for (const char* ptr = argv[1]; *ptr; ++ptr) {
+        if (!isdigit(*ptr)) {
+            return false;
+        }
     }
     return true;
 }
