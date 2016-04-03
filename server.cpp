@@ -16,3 +16,27 @@
 #include <cstring>
 #include <cstdlib>
 #include <ctime>
+
+bool isValidArguments(int argc, char const *argv[]);
+
+int main(int argc, char const *argv[])
+{
+    if (argc != 2 || !isValidArguments(argc, argv)) {
+        fprintf(stderr, "usage: %s PORT\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    return 0;
+}
+
+
+bool isValidArguments(int argc, char const *argv[]) {
+    if (argc != 2) {
+        return false;
+    }
+    int port;
+    if (sscanf(argv[1], "%d", &port) != 1) {
+        return false;
+    }
+    return true;
+}
