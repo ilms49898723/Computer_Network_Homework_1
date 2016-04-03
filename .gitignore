@@ -26,3 +26,9 @@
 *.exe
 *.out
 *.app
+
+# Executables in Unix-based System
+# Specified by filename directly
+server
+client
+
