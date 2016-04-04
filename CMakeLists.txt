@@ -7,4 +7,5 @@ set(SOURCE_FILES
     client.cpp
     server.cpp)
 
-add_executable(Network_Programming_Homework_1 ${SOURCE_FILES})
+add_executable(server server.cpp)
+add_executable(client client.cpp)
