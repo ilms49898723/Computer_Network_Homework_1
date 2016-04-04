@@ -1,2 +1,2 @@
-# Computer_Network_Homework_1
-Computer Network Homework 1
+# Network_Programming_Homework_1
+Network Programming Homework 1
