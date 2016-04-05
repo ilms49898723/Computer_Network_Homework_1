@@ -53,16 +53,20 @@ public:
     std::string getStartupPath() const {
         return startupPath;
     }
-    void changeDir(const std::string& newPath) {
-        if (chdir(newPath.c_str()) < 0) {
+    std::string changeDir(const std::string& newPath) {
+        std::string np = processPath(newPath);
+        if (chdir(np.c_str()) < 0) {
             if (errno == ENOENT) {
-                fprintf(stderr, "%s: No such file or directory\n", newPath.c_str());
+                fprintf(stderr, "%s: No such file or directory\n", np.c_str());
+                return np + ": No such file or directory";
             }
             else if (errno == ENOTDIR) {
-                fprintf(stderr, "%s is not a directory\n", newPath.c_str());
+                fprintf(stderr, "%s is not a directory\n", np.c_str());
+                return np + " is not a directory";
             }
         }
         updatePath();
+        return "";
     }
 
 private:
@@ -77,6 +81,20 @@ private:
             exit(EXIT_FAILURE);
         }
         path = buffer;
+    }
+    std::string processPath(const std::string& base) {
+        std::string basep = base;
+        if (base.front() == '\"' && base.back() == '\"') {
+            basep = base.substr(1, base.length() - 2);
+        }
+        std::string ret = "";
+        for (unsigned i = 0; i < basep.length(); ++i) {
+            if (basep[i] == '\\') {
+                continue;
+            }
+            ret += basep[i];
+        }
+        return ret;
     }
     std::string convertPath(const std::string& base) {
         std::string ret = base;
@@ -133,10 +151,10 @@ public:
         }
     }
     static void cd(const int& fd, const std::string& argu, WorkingDirectory& wd) {
-        wd.changeDir(argu);
+        std::string ret = wd.changeDir(argu);
         char buffer[maxn];
         clearBuffer(buffer);
-        sprintf(buffer, "%s", wd.getPath().c_str());
+        sprintf(buffer, "%s", ret.c_str());
         birdWrite(fd, buffer);
     }
     static void u(const int& fd) {
