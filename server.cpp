@@ -27,8 +27,6 @@ void sigChld(int signo);
 
 int main(int argc, char const *argv[])
 {
-    // local constant variables
-    constexpr static socklen_t clientLen = sizeof(sockaddr_in);
     // check arguments
     if (argc != 2 || !isValidArguments(argc, argv)) {
         fprintf(stderr, "usage: %s PORT\n", argv[0]);
@@ -43,6 +41,7 @@ int main(int argc, char const *argv[])
     // wait for connection, fork()
     while (true) {
         pid_t childPid;
+        socklen_t clientLen = sizeof(sockaddr_in);
         sockaddr_in clientAddr;
         int clientfd = accept(listenId, reinterpret_cast<sockaddr*>(&clientAddr), &clientLen);
         if ((childPid = fork()) == 0) {
@@ -55,7 +54,7 @@ int main(int argc, char const *argv[])
             exit(EXIT_SUCCESS);
         }
         else {
-            fprintf(stdout, "Start child Process pid = %d\n", static_cast<int>(pid));
+            fprintf(stdout, "Start child Process pid = %d\n", static_cast<int>(childPid));
         }
         close(clientfd);
     }
@@ -104,6 +103,7 @@ int serverInit(const int& port) {
         exit(EXIT_FAILURE);
     }
     listen(listenId, 64);
+    return listenId;
 }
 
 void tcpServer(int fd) {
