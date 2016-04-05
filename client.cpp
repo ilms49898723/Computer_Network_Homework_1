@@ -189,7 +189,7 @@ public:
             fprintf(stderr, "File Open Error\n");
             exit(EXIT_FAILURE);
         }
-        printf("Write to file %s\n", filename.c_str());
+        printf("Download File \"%s\"\n", getFileName(nargu).c_str());
         unsigned long fileSize;
         birdRead(fd, buffer);
         sscanf(buffer, "%*s%*s%lu", &fileSize);
