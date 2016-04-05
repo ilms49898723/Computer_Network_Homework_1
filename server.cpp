@@ -22,7 +22,7 @@ bool isValidArguments(int argc, char const *argv[]);
 int birdRead(const int& fd, char* buffer, const int& n);
 int birdWrite(const int& fd, const char* buffer, const int& n);
 int serverInit(const int& port);
-void tcpServer(int fd);
+void tcpServer(const int& fd);
 void sigChld(int signo);
 
 int main(int argc, char const *argv[])
@@ -93,7 +93,10 @@ int birdWrite(const int& fd, const char* buffer, const int& n) {
 int serverInit(const int& port) {
     int listenId;
     sockaddr_in serverAddr;
-    listenId = socket(AF_INET, SOCK_STREAM, 0);
+    if ((listenId = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        fprintf(stderr, "Socket Error\n");
+        exit(EXIT_FAILURE);
+    }
     memset(&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -106,7 +109,7 @@ int serverInit(const int& port) {
     return listenId;
 }
 
-void tcpServer(int fd) {
+void tcpServer(const int& fd) {
 
 }
 
