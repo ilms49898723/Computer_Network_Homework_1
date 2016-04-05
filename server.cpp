@@ -73,6 +73,9 @@ public:
                 }
                 else if (subPath == ".." || subPath == "../") {
                     int pos = subPath.rfind("/");
+                    if (pos == static_cast<int>(std::string::npos)) {
+                        continue;
+                    }
                     tmpNewPath = tmpNewPath.substr(0, pos);
                 }
                 else {
@@ -128,13 +131,13 @@ public:
         birdRead(fd, buffer);
         return std::string(buffer);
     }
-    static std::string pwd(const int& fd, const WorkingDirectory& wd) {
+    static void pwd(const int& fd, const WorkingDirectory& wd) {
         char buffer[maxn];
         cleanBuffer(buffer);
         sprintf(buffer, "%s", wd.getPath().c_str());
         birdWrite(fd, buffer);
     }
-    static std::string ls(const int& fd, const WorkingDirectory& wd) {
+    static void ls(const int& fd, const WorkingDirectory& wd) {
         DIR* dir = opendir(wd.getPath().c_str());
         if (!dir) {
             char buffer[maxn];
@@ -158,17 +161,17 @@ public:
             birdWrite(fd, buffer);
             for (unsigned i = 0; i < fileList.size(); ++i) {
                 cleanBuffer(buffer);
-                sprintf(buffer, "%s", name.c_str());
+                sprintf(buffer, "%s", fileList[i].c_str());
                 birdWrite(fd, buffer);
             }
             closedir(dir);
         }
     }
-    static std::string c(const int& fd, const std::string& argu) {
+    static void c(const int& fd, const std::string& argu) {
     }
-    static std::string u(const int& fd, const std::string& argu) {
+    static void u(const int& fd, const std::string& argu) {
     }
-    static std::string d(const int& fd, const std::string& argu) {
+    static void d(const int& fd, const std::string& argu) {
     }
 
 private:

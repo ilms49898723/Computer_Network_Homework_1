@@ -72,6 +72,9 @@ public:
                 }
                 else if (subPath == ".." || subPath == "../") {
                     int pos = subPath.rfind("/");
+                    if (pos == static_cast<int>(std::string::npos)) {
+                        continue;
+                    }
                     tmpNewPath = tmpNewPath.substr(0, pos);
                 }
                 else {
@@ -209,7 +212,7 @@ int main(int argc, char const *argv[])
     sscanf(argv[2], "%d", &port);
     int sockfd = clientInit(argv[1], port);
     TCPClient(sockfd);
-    closeClient(fd);
+    closeClient(sockfd);
     return 0;
 }
 
