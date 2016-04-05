@@ -29,9 +29,12 @@ void sigChld(int signo);
 
 int main(int argc, char const *argv[])
 {
-    // check arguments
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s SERVER_ADDRESS PORT\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
     if (!isValidArguments(argc, argv)) {
-        fprintf(stderr, "usage: %s PORT\n", argv[0]);
+        fprintf(stderr, "Invalid Arguments\n");
         exit(EXIT_FAILURE);
     }
     // server initialize
@@ -70,6 +73,7 @@ bool isValidArguments(int argc, char const *argv[]) {
     }
     for (const char* ptr = argv[1]; *ptr; ++ptr) {
         if (!isdigit(*ptr)) {
+            fprintf(stderr, "%s is not a number\n", argv[1]);
             return false;
         }
     }

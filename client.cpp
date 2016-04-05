@@ -197,8 +197,12 @@ std::string toLowerString(const std::string& src);
 
 int main(int argc, char const *argv[])
 {
-    if (!isValidArguments(argc, argv)) {
+    if (argc != 3) {
         fprintf(stderr, "usage: %s SERVER_ADDRESS PORT\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+    if (!isValidArguments(argc, argv)) {
+        fprintf(stderr, "Invalid Arguments\n");
         exit(EXIT_FAILURE);
     }
     init();
@@ -216,11 +220,12 @@ bool isValidArguments(int argc, char const *argv[]) {
     sockaddr_in tmp;
     memset(&tmp, 0, sizeof(tmp));
     if (inet_pton(AF_INET, argv[1], &tmp.sin_addr) <= 0) {
-        fprintf(stderr, "Inet_pton error for %s\n", argv[1]);
+        fprintf(stderr, "Inet_pton error for \"%s\"\n", argv[1]);
         return false;
     }
     for (const char* ptr = argv[2]; *ptr; ++ptr) {
         if (!isdigit(*ptr)) {
+            fprintf(stderr, "%s is not a number\n", argv[2]);
             return false;
         }
     }
@@ -247,7 +252,6 @@ int clientInit(const char* addr, const int& port) {
     }
     return sockfd;
 }
-
 
 void closeClient(const int& fd) {
     close(fd);
