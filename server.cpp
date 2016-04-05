@@ -171,7 +171,7 @@ public:
         FILE* fp = fopen(argu.c_str(), "rb");
         if (!fp) {
             clearBuffer(buffer);
-            sprintf(buffer, "ERROR_FILE_NOT_EXIST");
+            sprintf(buffer, "FILE_NOT_EXIST");
             birdWrite(fd, buffer);
             return;
         }

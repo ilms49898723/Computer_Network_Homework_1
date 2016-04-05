@@ -156,9 +156,11 @@ public:
             fclose(fp);
             return false;
         }
+        printf("Upload File \"%s\"\n", nargu.c_str());
         clearBuffer(buffer);
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
+        printf("File size: %lu bytes\n", fileSize);
         birdWriteFile(fd, fp, fileSize);
         printf("Upload File \"%s\" Completed\n", getFileName(nargu).c_str());
         return true;
@@ -171,8 +173,8 @@ public:
         birdWrite(fd, buffer);
         clearBuffer(buffer);
         birdRead(fd, buffer);
-        if (std::string(buffer) == "ERROR_FILE_NOT_EXIST") {
-            fprintf(stderr, "File Not Exists On Remote Server\n");
+        if (std::string(buffer) == "FILE_NOT_EXIST") {
+            fprintf(stderr, "%s: File Not Exists On Remote Server\n", nargu.c_str());
             return false;
         }
         std::string filename = getFileName(nargu);
