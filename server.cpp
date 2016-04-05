@@ -28,7 +28,7 @@ void sigChld(int signo);
 int main(int argc, char const *argv[])
 {
     // check arguments
-    if (argc != 2 || !isValidArguments(argc, argv)) {
+    if (!isValidArguments(argc, argv)) {
         fprintf(stderr, "usage: %s PORT\n", argv[0]);
         exit(EXIT_FAILURE);
     }
