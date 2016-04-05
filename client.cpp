@@ -52,13 +52,12 @@ public:
         return startupPath;
     }
     std::string changeDir(const std::string& newPath) {
-        std::string np = processPath(newPath);
-        if (chdir(np.c_str()) < 0) {
+        if (chdir(newPath.c_str()) < 0) {
             if (errno == ENOENT) {
-                return np + ": No such file or directory";
+                return newPath + ": No such file or directory";
             }
             else if (errno == ENOTDIR) {
-                return np + " is not a directory";
+                return newPath + " is not a directory";
             }
         }
         updatePath();
@@ -77,20 +76,6 @@ private:
             exit(EXIT_FAILURE);
         }
         path = buffer;
-    }
-    std::string processPath(const std::string& base) {
-        std::string basep = base;
-        if (base.front() == '\"' && base.back() == '\"') {
-            basep = base.substr(1, base.length() - 2);
-        }
-        std::string ret = "";
-        for (unsigned i = 0; i < basep.length(); ++i) {
-            if (basep[i] == '\\') {
-                continue;
-            }
-            ret += basep[i];
-        }
-        return ret;
     }
     std::string convertPath(const std::string& base) {
         std::string ret = base;
@@ -140,7 +125,8 @@ public:
     static void cd(const int& fd, const std::string& argu) {
         char buffer[maxn];
         clearBuffer(buffer);
-        sprintf(buffer, "cd %s", argu.c_str());
+        std::string nargu = processArgument(argu);
+        sprintf(buffer, "cd %s", nargu.c_str());
         birdWrite(fd, buffer);
         clearBuffer(buffer);
         birdRead(fd, buffer);
@@ -149,18 +135,19 @@ public:
         }
     }
     static bool u(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
-        FILE* fp = fopen(argu.c_str(), "rb");
+        const std::string nargu = processArgument(argu);
+        FILE* fp = fopen(nargu.c_str(), "rb");
         if (!fp) {
-            fprintf(stderr, "%s: File not exists\n", argu.c_str());
+            fprintf(stderr, "%s: File not exists\n", nargu.c_str());
             return false;
         }
         unsigned long fileSize;
         struct stat st;
-        stat(argu.c_str(), &st);
+        stat(nargu.c_str(), &st);
         fileSize = st.st_size;
         char buffer[maxn];
         clearBuffer(buffer);
-        sprintf(buffer, "u %s", argu.c_str());
+        sprintf(buffer, "u %s", nargu.c_str());
         birdWrite(fd, buffer);
         clearBuffer(buffer);
         birdRead(fd, buffer);
@@ -173,13 +160,14 @@ public:
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
         birdWriteFile(fd, fp, fileSize);
-        printf("Upload File \"%s\" Completed\n", getFileName(argu).c_str());
+        printf("Upload File \"%s\" Completed\n", getFileName(nargu).c_str());
         return true;
     }
     static bool d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
+        const std::string nargu = processArgument(argu);
         char buffer[maxn];
         clearBuffer(buffer);
-        sprintf(buffer, "d %s", argu.c_str());
+        sprintf(buffer, "d %s", nargu.c_str());
         birdWrite(fd, buffer);
         clearBuffer(buffer);
         birdRead(fd, buffer);
@@ -187,7 +175,7 @@ public:
             fprintf(stderr, "File Not Exists On Remote Server\n");
             return false;
         }
-        std::string filename = getFileName(argu);
+        std::string filename = getFileName(nargu);
         if (wd.getStartupPath().back() == '/') {
             filename = wd.getStartupPath() + "Download/" + filename;
         }
@@ -199,11 +187,13 @@ public:
             fprintf(stderr, "File Open Error\n");
             exit(EXIT_FAILURE);
         }
+        printf("Write to file %s\n", filename.c_str());
         unsigned long fileSize;
         birdRead(fd, buffer);
         sscanf(buffer, "%*s%*s%lu", &fileSize);
+        printf("File size: %lu bytes\n", fileSize);
         birdReadFile(fd, fp, fileSize);
-        printf("Download File \"%s\" Completed\n", getFileName(argu).c_str());
+        printf("Download File \"%s\" Completed\n", getFileName(nargu).c_str());
         return true;
     }
 
@@ -219,6 +209,20 @@ private:
         else {
             return filePath.substr(pos + 1);
         }
+    }
+    static std::string processArgument(const std::string& base) {
+        std::string basep = base;
+        if (base.front() == '\"' && base.back() == '\"') {
+            basep = base.substr(1, base.length() - 2);
+        }
+        std::string ret = "";
+        for (unsigned i = 0; i < basep.length(); ++i) {
+            if (basep[i] == '\\') {
+                continue;
+            }
+            ret += basep[i];
+        }
+        return ret;
     }
     static void clearBuffer(char* buffer, const int& n = maxn) {
         memset(buffer, 0, sizeof(char) * n);

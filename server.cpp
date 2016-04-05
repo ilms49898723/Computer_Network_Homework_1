@@ -54,13 +54,12 @@ public:
         return startupPath;
     }
     std::string changeDir(const std::string& newPath) {
-        std::string np = processPath(newPath);
-        if (chdir(np.c_str()) < 0) {
+        if (chdir(newPath.c_str()) < 0) {
             if (errno == ENOENT) {
-                return np + ": No such file or directory";
+                return newPath + ": No such file or directory";
             }
             else if (errno == ENOTDIR) {
-                return np + " is not a directory";
+                return newPath + " is not a directory";
             }
         }
         updatePath();
@@ -79,20 +78,6 @@ private:
             exit(EXIT_FAILURE);
         }
         path = buffer;
-    }
-    std::string processPath(const std::string& base) {
-        std::string basep = base;
-        if (base.front() == '\"' && base.back() == '\"') {
-            basep = base.substr(1, base.length() - 2);
-        }
-        std::string ret = "";
-        for (unsigned i = 0; i < basep.length(); ++i) {
-            if (basep[i] == '\\') {
-                continue;
-            }
-            ret += basep[i];
-        }
-        return ret;
     }
     std::string convertPath(const std::string& base) {
         std::string ret = base;
@@ -224,6 +209,20 @@ private:
         else {
             return filePath.substr(pos + 1);
         }
+    }
+    static std::string processArgument(const std::string& base) {
+        std::string basep = base;
+        if (base.front() == '\"' && base.back() == '\"') {
+            basep = base.substr(1, base.length() - 2);
+        }
+        std::string ret = "";
+        for (unsigned i = 0; i < basep.length(); ++i) {
+            if (basep[i] == '\\') {
+                continue;
+            }
+            ret += basep[i];
+        }
+        return ret;
     }
     static void clearBuffer(char* buffer, const int& n = maxn) {
         memset(buffer, 0, sizeof(char) * n);
