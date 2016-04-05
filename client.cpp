@@ -123,9 +123,9 @@ public:
         return ret;
     }
     static void cd(const int& fd, const std::string& argu) {
+        const std::string nargu = argu;
         char buffer[maxn];
         clearBuffer(buffer);
-        std::string nargu = processArgument(argu);
         sprintf(buffer, "cd %s", nargu.c_str());
         birdWrite(fd, buffer);
         clearBuffer(buffer);
@@ -147,7 +147,7 @@ public:
         fileSize = st.st_size;
         char buffer[maxn];
         clearBuffer(buffer);
-        sprintf(buffer, "u %s", nargu.c_str());
+        sprintf(buffer, "u %s", argu.c_str());
         birdWrite(fd, buffer);
         clearBuffer(buffer);
         birdRead(fd, buffer);
@@ -169,7 +169,7 @@ public:
         const std::string nargu = processArgument(argu);
         char buffer[maxn];
         clearBuffer(buffer);
-        sprintf(buffer, "d %s", nargu.c_str());
+        sprintf(buffer, "d %s", argu.c_str());
         birdWrite(fd, buffer);
         clearBuffer(buffer);
         birdRead(fd, buffer);

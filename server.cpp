@@ -134,15 +134,17 @@ public:
         }
     }
     static void cd(const int& fd, const std::string& argu, WorkingDirectory& wd) {
-        std::string ret = wd.changeDir(argu);
+        const std::string nargu = processArgument(argu);
+        std::string ret = wd.changeDir(nargu);
         char buffer[maxn];
         clearBuffer(buffer);
         sprintf(buffer, "%s", ret.c_str());
         birdWrite(fd, buffer);
     }
     static void u(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
+        const std::string nargu = processArgument(argu);
         char buffer[maxn];
-        std::string filename = getFileName(argu);
+        std::string filename = getFileName(nargu);
         if (wd.getStartupPath().back() == '/') {
             filename = wd.getStartupPath() + "Upload/" + filename;
         }
@@ -167,8 +169,9 @@ public:
         birdReadFile(fd, fp, fileSize);
     }
     static void d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
+        const std::string nargu = processArgument(argu);
         char buffer[maxn];
-        FILE* fp = fopen(argu.c_str(), "rb");
+        FILE* fp = fopen(nargu.c_str(), "rb");
         if (!fp) {
             clearBuffer(buffer);
             sprintf(buffer, "FILE_NOT_EXIST");
@@ -182,7 +185,7 @@ public:
         }
         unsigned long fileSize;
         struct stat st;
-        stat(argu.c_str(), &st);
+        stat(nargu.c_str(), &st);
         fileSize = st.st_size;
         clearBuffer(buffer);
         sprintf(buffer, "filesize = %lu", fileSize);
