@@ -249,7 +249,7 @@ int clientInit(const char* addr, const int& port) {
         fprintf(stderr, "Inet_pton Error for %s\n", addr);
         exit(EXIT_FAILURE);
     }
-    if (connect(sockfd, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(sockaddr_in)) >= 0) {
+    if (connect(sockfd, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(sockaddr_in)) < 0) {
         fprintf(stderr, "Connect Error\n");
         exit(EXIT_FAILURE);
     }

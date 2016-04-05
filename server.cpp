@@ -270,7 +270,7 @@ int serverInit(const int& port) {
         fprintf(stderr, "Bind Error\n");
         exit(EXIT_FAILURE);
     }
-    listen(listenId, 64);
+    listen(listenId, 5);
     return listenId;
 }
 
