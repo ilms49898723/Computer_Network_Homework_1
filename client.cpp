@@ -73,7 +73,7 @@ int birdWrite(const int& fd, const char* buffer, const int& n) {
 int clientInit(const char* addr, const int& port) {
     int sockfd;
     sockaddr_in serverAddr;
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0) < 0) {
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         fprintf(stderr, "Socket Error\n");
         exit(EXIT_FAILURE);
     }
