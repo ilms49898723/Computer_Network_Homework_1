@@ -35,7 +35,8 @@ public:
 
 public:
     WorkingDirectory() {
-        path = "";
+        updatePath();
+        startupPath = path;
     }
     virtual ~WorkingDirectory() {
 
@@ -51,46 +52,15 @@ public:
         return startupPath;
     }
     void changeDir(const std::string& newPath) {
-        if (newPath.length() <= 0u) {
-            return;
-        }
-        if (newPath[0] == '/') {
-            if (WorkingDirectory::isDirExist(newPath)) {
-                path = convertPath(newPath);
-            }
-            else {
+        if (chdir(newPath.c_str()) < 0) {
+            if (errno == ENOENT) {
                 fprintf(stderr, "%s: No such file or directory\n", newPath.c_str());
             }
-        }
-        else {
-            std::string tmpNewPath = path;
-            std::string tmpPath = newPath;
-            std::string subPath;
-            while ((subPath = nextSubDir(tmpPath)) != "") {
-                if (subPath == "." || subPath == "./") {
-                    continue;
-                }
-                else if (subPath == ".." || subPath == "../") {
-                    if (tmpNewPath == "/") {
-                        continue;
-                    }
-                    int pos = tmpNewPath.rfind("/");
-                    tmpNewPath = tmpNewPath.substr(0, pos);
-                    if (tmpNewPath == "") {
-                        tmpNewPath = "/";
-                    }
-                }
-                else {
-                    pathCat(tmpNewPath, subPath);
-                }
-            }
-            if (WorkingDirectory::isDirExist(tmpNewPath)) {
-                path = tmpNewPath;
-            }
-            else {
-                fprintf(stderr, "%s: No such file or directory\n", tmpNewPath.c_str());
+            else if (errno == ENOTDIR) {
+                fprintf(stderr, "%s is not a directory\n", newPath.c_str());
             }
         }
+        updatePath();
     }
 
 private:
@@ -98,16 +68,13 @@ private:
     std::string startupPath;
 
 private:
-    std::string nextSubDir(std::string& path) {
-        if (path.find("/") == std::string::npos) {
-            std::string ret = path;
-            path = "";
-            return ret;
+    void updatePath() {
+        char buffer[maxn];
+        if (!getcwd(buffer, maxn)) {
+            fprintf(stderr, "getcwd Error\n");
+            exit(EXIT_FAILURE);
         }
-        int pos = path.find("/");
-        std::string ret = path.substr(0, pos);
-        path = path.substr(pos + 1);
-        return ret;
+        path = buffer;
     }
     std::string convertPath(const std::string& base) {
         std::string ret = base;
@@ -116,40 +83,31 @@ private:
         }
         return ret;
     }
-    void pathCat(std::string& base, const std::string& append) {
-        if (base.back() != '/') {
-            base.append("/");
-        }
-        base += append;
-        if (base.back() == '/') {
-            base.pop_back();
-        }
-    }
 };
 
 class ClientFunc {
 public:
     static void q(const int& fd) {
         char buffer[maxn];
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         sprintf(buffer, "q");
         birdWrite(fd, buffer);
     }
     static std::string pwd(const int& fd) {
         char buffer[maxn];
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         sprintf(buffer, "pwd");
         birdWrite(fd, buffer);
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         birdRead(fd, buffer);
         return std::string(buffer);
     }
     static std::string ls(const int& fd) {
         char buffer[maxn];
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         sprintf(buffer, "ls");
         birdWrite(fd, buffer);
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         birdRead(fd, buffer);
         std::string ret = "";
         int msgLen;
@@ -165,10 +123,10 @@ public:
     }
     static std::string cd(const int& fd, const std::string& argu) {
         char buffer[maxn];
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         sprintf(buffer, "cd %s", argu.c_str());
         birdWrite(fd, buffer);
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         birdRead(fd, buffer);
         return std::string(buffer);
     }
@@ -180,7 +138,7 @@ public:
     }
 
 private:
-    static void cleanBuffer(char* buffer, const int& n = maxn) {
+    static void clearBuffer(char* buffer, const int& n = maxn) {
         memset(buffer, 0, sizeof(char) * n);
     }
     static int birdRead(const int& fd, char* buffer, const int& n = maxn) {
@@ -207,7 +165,6 @@ void closeClient(const int& fd);
 void init();
 void TCPClient(const int& fd, const char* host);
 void printInfo();
-void getCWD(char* path, const int& n);
 void trimNewLine(char* str);
 std::string toLowerString(const std::string& src);
 std::string trimSpaceLE(const std::string& str);
@@ -285,9 +242,6 @@ void init() {
 void TCPClient(const int& fd, const char* host) {
     std::string serverPath = ClientFunc::pwd(fd);
     WorkingDirectory wd;
-    char cwd[maxn];
-    getCWD(cwd, maxn);
-    wd.init(cwd);
     printInfo();
     char userInput[maxn];
     while (true) {
@@ -337,13 +291,6 @@ void printInfo() {
     puts("exit: quit");
     puts("help: information");
     puts("");
-}
-
-void getCWD(char* dst, const int& n) {
-    if (!getcwd(dst, n)) {
-        fprintf(stderr, "Getcwd Error\n");
-        exit(EXIT_FAILURE);
-    }
 }
 
 void trimNewLine(char* str) {

@@ -37,7 +37,8 @@ public:
 
 public:
     WorkingDirectory() {
-        path = "";
+        updatePath();
+        startupPath = path;
     }
     virtual ~WorkingDirectory() {
 
@@ -53,46 +54,15 @@ public:
         return startupPath;
     }
     void changeDir(const std::string& newPath) {
-        if (newPath.length() <= 0u) {
-            return;
-        }
-        if (newPath[0] == '/') {
-            if (WorkingDirectory::isDirExist(newPath)) {
-                path = convertPath(newPath);
-            }
-            else {
+        if (chdir(newPath.c_str()) < 0) {
+            if (errno == ENOENT) {
                 fprintf(stderr, "%s: No such file or directory\n", newPath.c_str());
             }
-        }
-        else {
-            std::string tmpNewPath = path;
-            std::string tmpPath = newPath;
-            std::string subPath;
-            while ((subPath = nextSubDir(tmpPath)) != "") {
-                if (subPath == "." || subPath == "./") {
-                    continue;
-                }
-                else if (subPath == ".." || subPath == "../") {
-                    if (tmpNewPath == "/") {
-                        continue;
-                    }
-                    int pos = tmpNewPath.rfind("/");
-                    tmpNewPath = tmpNewPath.substr(0, pos);
-                    if (tmpNewPath == "") {
-                        tmpNewPath = "/";
-                    }
-                }
-                else {
-                    pathCat(tmpNewPath, subPath);
-                }
-            }
-            if (WorkingDirectory::isDirExist(tmpNewPath)) {
-                path = tmpNewPath;
-            }
-            else {
-                fprintf(stderr, "%s: No such file or directory\n", tmpNewPath.c_str());
+            else if (errno == ENOTDIR) {
+                fprintf(stderr, "%s is not a directory\n", newPath.c_str());
             }
         }
+        updatePath();
     }
 
 private:
@@ -100,16 +70,13 @@ private:
     std::string startupPath;
 
 private:
-    std::string nextSubDir(std::string& path) {
-        if (path.find("/") == std::string::npos) {
-            std::string ret = path;
-            path = "";
-            return ret;
+    void updatePath() {
+        char buffer[maxn];
+        if (!getcwd(buffer, maxn)) {
+            fprintf(stderr, "getcwd Error\n");
+            exit(EXIT_FAILURE);
         }
-        int pos = path.find("/");
-        std::string ret = path.substr(0, pos);
-        path = path.substr(pos + 1);
-        return ret;
+        path = buffer;
     }
     std::string convertPath(const std::string& base) {
         std::string ret = base;
@@ -118,28 +85,19 @@ private:
         }
         return ret;
     }
-    void pathCat(std::string& base, const std::string& append) {
-        if (base.back() != '/') {
-            base.append("/");
-        }
-        base += append;
-        if (base.back() == '/') {
-            base.pop_back();
-        }
-    }
 };
 
 class ServerFunc {
 public:
     static std::string nextCommand(const int& fd) {
         char buffer[maxn];
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         birdRead(fd, buffer);
         return std::string(buffer);
     }
     static void pwd(const int& fd, const WorkingDirectory& wd) {
         char buffer[maxn];
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         sprintf(buffer, "%s", wd.getPath().c_str());
         birdWrite(fd, buffer);
     }
@@ -147,7 +105,7 @@ public:
         DIR* dir = opendir(wd.getPath().c_str());
         if (!dir) {
             char buffer[maxn];
-            cleanBuffer(buffer);
+            clearBuffer(buffer);
             sprintf(buffer, "Open directory Error!");
             birdWrite(fd, buffer);
         }
@@ -163,11 +121,11 @@ public:
             }
             std::sort(fileList.begin(), fileList.end());
             char buffer[maxn];
-            cleanBuffer(buffer);
+            clearBuffer(buffer);
             sprintf(buffer, "length = %d", static_cast<int>(fileList.size()));
             birdWrite(fd, buffer);
             for (unsigned i = 0; i < fileList.size(); ++i) {
-                cleanBuffer(buffer);
+                clearBuffer(buffer);
                 sprintf(buffer, "%s", fileList[i].c_str());
                 birdWrite(fd, buffer);
             }
@@ -177,7 +135,7 @@ public:
     static void cd(const int& fd, const std::string& argu, WorkingDirectory& wd) {
         wd.changeDir(argu);
         char buffer[maxn];
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         sprintf(buffer, "%s", wd.getPath().c_str());
         birdWrite(fd, buffer);
     }
@@ -187,13 +145,13 @@ public:
     }
     static void undef(const int& fd, const std::string& command) {
         char buffer[maxn];
-        cleanBuffer(buffer);
+        clearBuffer(buffer);
         sprintf(buffer, "%s: Command not found", command.c_str());
         birdWrite(fd, buffer);
     }
 
 private:
-    static void cleanBuffer(char* buffer, const int& n = maxn) {
+    static void clearBuffer(char* buffer, const int& n = maxn) {
         memset(buffer, 0, sizeof(char) * n);
     }
     static int birdRead(const int& fd, char* buffer, const int& n = maxn) {
@@ -217,7 +175,6 @@ private:
 bool isValidArguments(int argc, char const *argv[]);
 int serverInit(const int& port);
 void TCPServer(const int& fd);
-void getCWD(char* path, const int& n);
 void trimNewLine(char* str);
 std::string trimSpaceLE(const std::string& str);
 std::string toLowerString(const std::string& src);
@@ -297,9 +254,6 @@ int serverInit(const int& port) {
 
 void TCPServer(const int& fd) {
     WorkingDirectory wd;
-    char cwd[maxn];
-    getCWD(cwd, maxn);
-    wd.init(cwd);
     while (true) {
         std::string command = ServerFunc::nextCommand(fd);
         printf("get command %s\n", command.c_str());
@@ -351,13 +305,6 @@ void TCPServer(const int& fd) {
         else {
             ServerFunc::undef(fd, command);
         }
-    }
-}
-
-void getCWD(char* dst, const int& n) {
-    if (!getcwd(dst, n)) {
-        fprintf(stderr, "Getcwd Error\n");
-        exit(EXIT_FAILURE);
     }
 }
 
