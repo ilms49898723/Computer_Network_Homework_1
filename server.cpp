@@ -78,6 +78,9 @@ public:
                     }
                     int pos = tmpNewPath.rfind("/");
                     tmpNewPath = tmpNewPath.substr(0, pos);
+                    if (tmpNewPath == "") {
+                        tmpNewPath = "/";
+                    }
                 }
                 else {
                     pathCat(tmpNewPath, subPath);
@@ -173,6 +176,10 @@ public:
     }
     static void cd(const int& fd, const std::string& argu, WorkingDirectory& wd) {
         wd.changeDir(argu);
+        char buffer[maxn];
+        cleanBuffer(buffer);
+        sprintf(buffer, "%s", wd.getPath().c_str());
+        birdWrite(fd, buffer);
     }
     static void u(const int& fd) {
     }

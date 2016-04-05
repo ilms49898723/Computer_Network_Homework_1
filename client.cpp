@@ -76,6 +76,9 @@ public:
                     }
                     int pos = tmpNewPath.rfind("/");
                     tmpNewPath = tmpNewPath.substr(0, pos);
+                    if (tmpNewPath == "") {
+                        tmpNewPath = "/";
+                    }
                 }
                 else {
                     pathCat(tmpNewPath, subPath);
@@ -166,7 +169,7 @@ public:
         sprintf(buffer, "cd %s", argu.c_str());
         birdWrite(fd, buffer);
         cleanBuffer(buffer);
-        //birdRead(fd, buffer);
+        birdRead(fd, buffer);
         return std::string(buffer);
     }
     static std::string u(const int& fd, const std::string& argu) {
@@ -202,7 +205,7 @@ bool isValidArguments(int argc, char const *argv[]);
 int clientInit(const char* addr, const int& port);
 void closeClient(const int& fd);
 void init();
-void TCPClient(const int& fd);
+void TCPClient(const int& fd, const char* host);
 void printInfo();
 void getCWD(char* path, const int& n);
 void trimNewLine(char* str);
@@ -224,7 +227,7 @@ int main(int argc, char const *argv[])
     int port;
     sscanf(argv[2], "%d", &port);
     int sockfd = clientInit(argv[1], port);
-    TCPClient(sockfd);
+    TCPClient(sockfd, argv[1]);
     closeClient(sockfd);
     return 0;
 }
@@ -279,7 +282,8 @@ void init() {
     }
 }
 
-void TCPClient(const int& fd) {
+void TCPClient(const int& fd, const char* host) {
+    std::string serverPath = ClientFunc::pwd(fd);
     WorkingDirectory wd;
     char cwd[maxn];
     getCWD(cwd, maxn);
@@ -287,12 +291,15 @@ void TCPClient(const int& fd) {
     printInfo();
     char userInput[maxn];
     while (true) {
-        printf("$: ");
+        printf("%s:%s$ ", host, serverPath.c_str());
         if (scanf("%s", userInput) != 1) {
             break;
         }
         std::string command = toLowerString(userInput);
-        if (command == "q") {
+        if (command == "help") {
+            printInfo();
+        }
+        else if (command == "exit") {
             ClientFunc::q(fd);
             break;
         }
@@ -304,7 +311,7 @@ void TCPClient(const int& fd) {
         }
         else if (command == "cd") {
             std::string argu = nextArgument(stdin);
-            printf("%s\n", ClientFunc::cd(fd, argu).c_str());
+            serverPath = ClientFunc::cd(fd, argu);
         }
         else if (command == "u") {
             std::string argu = nextArgument(stdin);
@@ -327,7 +334,8 @@ void printInfo() {
     puts("cd <path>: change working directory (remote)");
     puts("u <filepath>: upload file to the working directory (remote)");
     puts("d <filepath>: download file to Download Folder (local)");
-    puts("q: quit");
+    puts("exit: quit");
+    puts("help: information");
     puts("");
 }
 
