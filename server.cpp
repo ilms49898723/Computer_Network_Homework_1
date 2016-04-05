@@ -57,11 +57,9 @@ public:
         std::string np = processPath(newPath);
         if (chdir(np.c_str()) < 0) {
             if (errno == ENOENT) {
-                fprintf(stderr, "%s: No such file or directory\n", np.c_str());
                 return np + ": No such file or directory";
             }
             else if (errno == ENOTDIR) {
-                fprintf(stderr, "%s is not a directory\n", np.c_str());
                 return np + " is not a directory";
             }
         }
@@ -266,7 +264,7 @@ int serverInit(const int& port) {
         fprintf(stderr, "Bind Error\n");
         exit(EXIT_FAILURE);
     }
-    listen(listenId, 5);
+    listen(listenId, 256);
     return listenId;
 }
 
