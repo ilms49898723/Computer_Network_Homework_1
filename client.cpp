@@ -371,6 +371,7 @@ void TCPClient(const int& fd, const char* host) {
         }
         else if (command == "exit") {
             ClientFunc::q(fd);
+            printf("\nConnection Terminated\n\n");
             break;
         }
         else if (command == "pwd") {
