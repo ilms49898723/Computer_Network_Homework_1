@@ -94,7 +94,7 @@ private:
     }
     std::string convertPath(const std::string& base) {
         std::string ret = base;
-        if (ret.back() == '/') {
+        if (ret != "/" && ret.back() == '/') {
             ret.pop_back();
         }
         return ret;
@@ -148,10 +148,10 @@ public:
             printf("%s\n", buffer);
         }
     }
-    static bool u(const int& fd, const std::string& argu) {
+    static bool u(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         FILE* fp = fopen(argu.c_str(), "rb");
         if (!fp) {
-            fprintf(stderr, "%s: File not exist\n", argu.c_str());
+            fprintf(stderr, "%s: File not exists\n", argu.c_str());
             return false;
         }
         unsigned long fileSize;
@@ -165,7 +165,7 @@ public:
         clearBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) == "ERROR") {
-            fprintf(stderr, "Error On Remote Server\n");
+            fprintf(stderr, "Error Occurs On Remote Server\n");
             fclose(fp);
             return false;
         }
@@ -173,9 +173,10 @@ public:
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
         birdWriteFile(fd, fp, fileSize);
+        printf("Upload File \"%s\" Completed\n", getFileName(argu).c_str());
         return true;
     }
-    static bool d(const int& fd, const std::string& argu) {
+    static bool d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         char buffer[maxn];
         clearBuffer(buffer);
         sprintf(buffer, "d %s", argu.c_str());
@@ -183,10 +184,17 @@ public:
         clearBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) == "ERROR_FILE_NOT_EXIST") {
-            fprintf(stderr, "File Not Exist On Remote Server\n");
+            fprintf(stderr, "File Not Exists On Remote Server\n");
             return false;
         }
-        FILE* fp = fopen(argu.c_str(), "w");
+        std::string filename = getFileName(argu);
+        if (wd.getStartupPath().back() == '/') {
+            filename = wd.getStartupPath() + "Download/" + filename;
+        }
+        else {
+            filename = wd.getStartupPath() + "/Download/" + filename;
+        }
+        FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
             fprintf(stderr, "File Open Error\n");
             exit(EXIT_FAILURE);
@@ -195,10 +203,23 @@ public:
         birdRead(fd, buffer);
         sscanf(buffer, "%*s%*s%lu", &fileSize);
         birdReadFile(fd, fp, fileSize);
+        printf("Download File \"%s\" Completed\n", getFileName(argu).c_str());
         return true;
     }
 
 private:
+    static std::string getFileName(const std::string& filePath) {
+        unsigned pos = filePath.rfind("/");
+        if (pos + 1 >= filePath.length()) {
+            return "";
+        }
+        else if (pos == std::string::npos) {
+            return filePath;
+        }
+        else {
+            return filePath.substr(pos + 1);
+        }
+    }
     static void clearBuffer(char* buffer, const int& n = maxn) {
         memset(buffer, 0, sizeof(char) * n);
     }
@@ -365,9 +386,11 @@ void TCPClient(const int& fd, const char* host) {
         }
         else if (command == "u") {
             std::string argu = nextArgument(stdin);
+            ClientFunc::u(fd, argu, wd);
         }
         else if (command == "d") {
             std::string argu = nextArgument(stdin);
+            ClientFunc::d(fd, argu, wd);
         }
         else {
             fprintf(stderr, "%s: Command not found\n", command.c_str());

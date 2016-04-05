@@ -96,7 +96,7 @@ private:
     }
     std::string convertPath(const std::string& base) {
         std::string ret = base;
-        if (ret.back() == '/') {
+        if (ret != "/" && ret.back() == '/') {
             ret.pop_back();
         }
         return ret;
@@ -155,9 +155,16 @@ public:
         sprintf(buffer, "%s", ret.c_str());
         birdWrite(fd, buffer);
     }
-    static void u(const int& fd, const std::string& argu) {
+    static void u(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         char buffer[maxn];
-        FILE* fp = fopen(argu.c_str(), "w");
+        std::string filename = getFileName(argu);
+        if (wd.getStartupPath().back() == '/') {
+            filename = wd.getStartupPath() + "Upload/" + filename;
+        }
+        else {
+            filename = wd.getStartupPath() + "/Upload/" + filename;
+        }
+        FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
             clearBuffer(buffer);
             sprintf(buffer, "ERROR");
@@ -174,7 +181,7 @@ public:
         sscanf(buffer, "%*s%*s%lu", &fileSize);
         birdReadFile(fd, fp, fileSize);
     }
-    static void d(const int& fd, const std::string& argu) {
+    static void d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         char buffer[maxn];
         FILE* fp = fopen(argu.c_str(), "rb");
         if (!fp) {
@@ -206,6 +213,18 @@ public:
     }
 
 private:
+    static std::string getFileName(const std::string& filePath) {
+        unsigned pos = filePath.rfind("/");
+        if (pos + 1 >= filePath.length()) {
+            return "";
+        }
+        else if (pos == std::string::npos) {
+            return filePath;
+        }
+        else {
+            return filePath.substr(pos + 1);
+        }
+    }
     static void clearBuffer(char* buffer, const int& n = maxn) {
         memset(buffer, 0, sizeof(char) * n);
     }
@@ -263,6 +282,7 @@ private:
 
 bool isValidArguments(int argc, char const *argv[]);
 int serverInit(const int& port);
+void init();
 void TCPServer(const int& fd);
 void trimNewLine(char* str);
 std::string trimSpaceLE(const std::string& str);
@@ -279,6 +299,7 @@ int main(int argc, char const *argv[])
         fprintf(stderr, "Invalid Arguments\n");
         exit(EXIT_FAILURE);
     }
+    init();
     // server initialize
     int port;
     sscanf(argv[1], "%d", &port);
@@ -341,11 +362,16 @@ int serverInit(const int& port) {
     return listenId;
 }
 
+void init() {
+    if (!WorkingDirectory::isDirExist("./Upload")) {
+        mkdir("Upload", 0777);
+    }
+}
+
 void TCPServer(const int& fd) {
     WorkingDirectory wd;
     while (true) {
         std::string command = ServerFunc::nextCommand(fd);
-        printf("get command %s\n", command.c_str());
         if (command == "q") {
             break;
         }
@@ -376,7 +402,7 @@ void TCPServer(const int& fd) {
             else {
                 std::string argu(command.c_str() + 1);
                 argu = trimSpaceLE(argu);
-                ServerFunc::u(fd, argu);
+                ServerFunc::u(fd, argu, wd);
             }
         }
         else if (command.find("d") == 0) {
@@ -388,7 +414,7 @@ void TCPServer(const int& fd) {
             else {
                 std::string argu(command.c_str() + 1);
                 argu = trimSpaceLE(argu);
-                ServerFunc::d(fd, argu);
+                ServerFunc::d(fd, argu, wd);
             }
         }
         else {
