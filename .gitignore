@@ -34,3 +34,7 @@ client
 
 # IDE Output Files
 /bin/
+
+# sublime text
+HW1.sublime-project
+HW1.sublime-workspace
