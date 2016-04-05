@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -17,13 +18,115 @@
 #include <cstdlib>
 #include <ctime>
 #include <cctype>
+#include <string>
+
+constexpr int maxn = 2048;
+
+class WorkingDirectory {
+public:
+    static bool isDirExist(const std::string& path) {
+        DIR* dir = opendir(path.c_str());
+        if (dir) {
+            closedir(dir);
+            return true;
+        }
+        return false;
+    }
+
+public:
+    WorkingDirectory() {
+        path = "";
+    }
+    virtual ~WorkingDirectory() {
+
+    }
+    void init(const std::string& initPath) {
+        path = convertPath(initPath);
+        startupPath = convertPath(initPath);
+    }
+    std::string getPath() const {
+        return path;
+    }
+    std::string getStartupPath() const {
+        return startupPath;
+    }
+    void changeDir(const std::string& newPath) {
+        if (newPath.length() <= 0u) {
+            return;
+        }
+        if (newPath[0] == '/') {
+            if (WorkingDirectory::isDirExist(newPath)) {
+                path = convertPath(newPath);
+            }
+            else {
+                fprintf(stderr, "%s: No such file or directory\n", newPath.c_str());
+            }
+        }
+        else {
+            std::string tmpNewPath = path;
+            std::string tmpPath = newPath;
+            std::string subPath;
+            while ((subPath = nextSubDir(tmpPath)) != "") {
+                if (subPath == "." || subPath == "./") {
+                    continue;
+                }
+                else if (subPath == ".." || subPath == "../") {
+                    int pos = subPath.rfind("/");
+                    tmpNewPath = tmpNewPath.substr(0, pos);
+                }
+                else {
+                    pathCat(tmpNewPath, subPath);
+                }
+            }
+            if (WorkingDirectory::isDirExist(tmpNewPath)) {
+                path = tmpNewPath;
+            }
+            else {
+                fprintf(stderr, "%s: No such file or directory\n", tmpNewPath.c_str());
+            }
+        }
+    }
+
+private:
+    std::string path;
+    std::string startupPath;
+
+private:
+    std::string nextSubDir(std::string& path) {
+        if (path.find("/") == std::string::npos) {
+            return "";
+        }
+        int pos = path.find("/");
+        std::string ret = path.substr(0, pos);
+        path = path.substr(pos + 1);
+        return ret;
+    }
+    std::string convertPath(const std::string& base) {
+        std::string ret = base;
+        if (ret.back() == '/') {
+            ret.pop_back();
+        }
+        return ret;
+    }
+    void pathCat(std::string& base, const std::string& append) {
+        if (base.back() != '/') {
+            base.append("/");
+        }
+        base += append;
+        if (base.back() == '/') {
+            base.pop_back();
+        }
+    }
+};
 
 bool isValidArguments(int argc, char const *argv[]);
 int birdRead(const int& fd, char* buffer, const int& n);
 int birdWrite(const int& fd, const char* buffer, const int& n);
 int clientInit(const char* addr, const int& port);
 void closeClient(const int& fd);
+void init();
 void TCPClient(const int& fd);
+void getCWD(char* path, const int& n);
 
 int main(int argc, char const *argv[])
 {
@@ -31,9 +134,11 @@ int main(int argc, char const *argv[])
         fprintf(stderr, "usage: %s SERVER_ADDRESS PORT\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+    init();
     int port;
     sscanf(argv[2], "%d", &port);
     int sockfd = clientInit(argv[1], port);
+    TCPClient(sockfd);
     return 0;
 }
 
@@ -97,6 +202,22 @@ void closeClient(const int& fd) {
     close(fd);
 }
 
-void TCPClient(const int& fd) {
+void init() {
+    if (!WorkingDirectory::isDirExist("./Download")) {
+        mkdir("Download", 0777);
+    }
+}
 
+void TCPClient(const int& fd) {
+    WorkingDirectory wd;
+    char cwd[maxn];
+    getCWD(cwd, maxn);
+    wd.init(cwd);
+}
+
+void getCWD(char* dst, const int& n) {
+    if (!getcwd(dst, n)) {
+        fprintf(stderr, "Getcwd Error\n");
+        exit(EXIT_FAILURE);
+    }
 }
