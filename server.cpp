@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -17,6 +18,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <cctype>
+#include <string>
 
 bool isValidArguments(int argc, char const *argv[]);
 int birdRead(const int& fd, char* buffer, const int& n);
