@@ -56,6 +56,7 @@ int main(int argc, char const *argv[])
             int clientPort = static_cast<int>(clientAddr.sin_port);
             fprintf(stdout, "Connection from %s port %d\n", clientInfo, clientPort);
             TCPServer(clientfd);
+            close(clientfd);
             exit(EXIT_SUCCESS);
         }
         else {

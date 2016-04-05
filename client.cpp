@@ -210,6 +210,7 @@ int main(int argc, char const *argv[])
     sscanf(argv[2], "%d", &port);
     int sockfd = clientInit(argv[1], port);
     TCPClient(sockfd);
+    closeClient(fd);
     return 0;
 }
 
@@ -311,7 +312,6 @@ void TCPClient(const int& fd) {
             printf("%s: Command not found\n", command.c_str());
         }
     }
-    closeClient(fd);
 }
 
 void printInfo() {
