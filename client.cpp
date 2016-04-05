@@ -19,6 +19,7 @@
 #include <ctime>
 #include <cctype>
 #include <string>
+#include <limits>
 
 constexpr int maxn = 2048;
 
@@ -119,14 +120,80 @@ private:
     }
 };
 
+class ClientFunc {
+public:
+    static std::string pwd(const int& fd) {
+        char buffer[maxn];
+        cleanBuffer(buffer, maxn);
+        sprintf(buffer, "pwd");
+        birdWrite(fd, buffer, maxn);
+        cleanBuffer(buffer, maxn);
+        birdRead(fd, buffer, maxn);
+        return std::string(buffer);
+    }
+    static std::string ls(const int& fd) {
+        char buffer[maxn];
+        cleanBuffer(buffer, maxn);
+        sprintf(buffer, "ls");
+        birdWrite(fd, buffer, maxn);
+        cleanBuffer(buffer, maxn);
+        birdRead(fd, buffer, maxn);
+        std::string ret;
+        int msgLen;
+        sscanf(buffer, "%*s%*s%d", &msgLen); // format: length = %d
+        int byteRead = 0;
+        while ((byteRead += birdRead(fd, buffer, maxn)) < msgLen) {
+            ret.append(buffer);
+        }
+        return ret;
+    }
+    static std::string c(const int& fd, const std::string& argu) {
+        char buffer[maxn];
+        cleanBuffer(buffer, maxn);
+        sprintf(buffer, "c %s", argu.c_str());
+        birdWrite(fd, buffer, maxn);
+        cleanBuffer(buffer, maxn);
+        birdRead(fd, buffer, maxn);
+        return std::string(buffer);
+    }
+    static std::string u(const int& fd, const std::string& argu) {
+        return "";
+    }
+    static std::string d(const int& fd, const std::string& argu) {
+        return "";
+    }
+
+private:
+    static void cleanBuffer(char* buffer, const int& n) {
+        memset(buffer, 0, sizeof(char) * n);
+    }
+    static int birdRead(const int& fd, char* buffer, const int& n) {
+        int byteRead = read(fd, buffer, n);
+        if (byteRead < 0) {
+            fprintf(stderr, "Read Error\n");
+            exit(EXIT_FAILURE);
+        }
+        return byteRead;
+    }
+    static int birdWrite(const int& fd, const char* buffer, const int& n) {
+        int byteWrite = write(fd, buffer, sizeof(char) * n);
+        if (byteWrite < 0) {
+            fprintf(stderr, "Write Error\n");
+            exit(EXIT_FAILURE);
+        }
+        return byteWrite;
+    }
+};
+
 bool isValidArguments(int argc, char const *argv[]);
-int birdRead(const int& fd, char* buffer, const int& n);
-int birdWrite(const int& fd, const char* buffer, const int& n);
 int clientInit(const char* addr, const int& port);
 void closeClient(const int& fd);
 void init();
 void TCPClient(const int& fd);
+void printInfo();
 void getCWD(char* path, const int& n);
+void trimNewLine(char* str);
+std::string toLowerString(const std::string& src);
 
 int main(int argc, char const *argv[])
 {
@@ -158,22 +225,6 @@ bool isValidArguments(int argc, char const *argv[]) {
         }
     }
     return true;
-}
-
-int birdRead(const int& fd, char* buffer, const int& n) {
-    int byteRead = read(fd, buffer, n);
-    if (byteRead < 0) {
-        fprintf(stderr, "Read Error\n");
-    }
-    return byteRead;
-}
-
-int birdWrite(const int& fd, const char* buffer, const int& n) {
-    int byteWrite = write(fd, buffer, sizeof(char) * n);
-    if (byteWrite < 0) {
-        fprintf(stderr, "Write Error\n");
-    }
-    return byteWrite;
 }
 
 int clientInit(const char* addr, const int& port) {
@@ -213,6 +264,59 @@ void TCPClient(const int& fd) {
     char cwd[maxn];
     getCWD(cwd, maxn);
     wd.init(cwd);
+    char userInput[maxn];
+    while (scanf("%s ", userInput) == 1) {
+        std::string command = toLowerString(userInput);
+        if (command == "q") {
+            break;
+        }
+        else if (command == "pwd") {
+            printf("%s\n", ClientFunc::pwd(fd).c_str());
+        }
+        else if (command == "ls") {
+            printf("%s\n", ClientFunc::ls(fd).c_str());
+        }
+        else if (command == "c") {
+            char argu[maxn];
+            if (!fgets(argu, maxn, stdin)) {
+                fprintf(stderr, "Read Command Error\n");
+                exit(EXIT_FAILURE);
+            }
+            trimNewLine(argu);
+            printf("%s\n", ClientFunc::c(fd, argu).c_str());
+        }
+        else if (command == "u") {
+            char argu[maxn];
+            if (!fgets(argu, maxn, stdin)) {
+                fprintf(stderr, "Read Command Error\n");
+                exit(EXIT_FAILURE);
+            }
+            trimNewLine(argu);
+            printf("%s\n", ClientFunc::u(fd, argu).c_str());
+        }
+        else if (command == "d") {
+            char argu[maxn];
+            if (!fgets(argu, maxn, stdin)) {
+                fprintf(stderr, "Read Command Error\n");
+                exit(EXIT_FAILURE);
+            }
+            trimNewLine(argu);
+            printf("%s\n", ClientFunc::d(fd, argu).c_str());
+        }
+        else {
+            printf("%s: Command not found\n", command.c_str());
+        }
+    }
+    closeClient(fd);
+}
+
+void printInfo() {
+    puts("pwd: print current working directory (remote)");
+    puts("ls: list information about the files (in current directory) (remote)");
+    puts("c <path>: change working directory (remote)");
+    puts("u <filepath>: upload file to the working directory (remote)");
+    puts("d <filepath>: download file to Download Folder (local)");
+    puts("q: quit");
 }
 
 void getCWD(char* dst, const int& n) {
@@ -220,4 +324,18 @@ void getCWD(char* dst, const int& n) {
         fprintf(stderr, "Getcwd Error\n");
         exit(EXIT_FAILURE);
     }
+}
+
+void trimNewLine(char* str) {
+    if (str[strlen(str) - 1] == '\n') {
+        str[strlen(str) - 1] = '\0';
+    }
+}
+
+std::string toLowerString(const std::string& src) {
+    std::string ret;
+    for (unsigned i = 0; i < src.length(); ++i) {
+        ret += tolower(src[i]);
+    }
+    return ret;
 }
