@@ -175,6 +175,12 @@ public:
     }
     static void d(const int& fd) {
     }
+    static void undef(const int& fd, const std::string& command) {
+        char buffer[maxn];
+        cleanBuffer(buffer);
+        sprintf(buffer, "%s: Command not found", command.c_str());
+        birdWrite(fd, buffer);
+    }
 
 private:
     static void cleanBuffer(char* buffer, const int& n = maxn) {
@@ -303,6 +309,9 @@ void TCPServer(const int& fd) {
         }
         else if (command == "d") {
             ServerFunc::d(fd);
+        }
+        else {
+            ServerFunc::undef(fd, command);
         }
     }
 }
