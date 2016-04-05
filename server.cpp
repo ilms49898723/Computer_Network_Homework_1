@@ -38,7 +38,7 @@ int main(int argc, char const *argv[])
     int listenId = serverInit(port);
     // signal
     signal(SIGCHLD, sigChld);
-    // wait for connection, fork()
+    // wait for connection, then fork for per client
     while (true) {
         pid_t childPid;
         socklen_t clientLen = sizeof(sockaddr_in);

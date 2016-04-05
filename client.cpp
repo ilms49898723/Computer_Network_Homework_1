@@ -22,6 +22,7 @@ bool isValidArguments(int argc, char const *argv[]);
 int birdRead(const int& fd, char* buffer, const int& n);
 int birdWrite(const int& fd, const char* buffer, const int& n);
 int clientInit(const char* addr, const int& port);
+void closeClient(const int& fd);
 void TCPClient(const int& fd);
 
 int main(int argc, char const *argv[])
@@ -81,7 +82,7 @@ int clientInit(const char* addr, const int& port) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(port);
     if (inet_pton(AF_INET, addr, &serverAddr.sin_addr) <= 0) {
-        fprintf(stderr, "Inet_pton error for %s\n", addr);
+        fprintf(stderr, "Inet_pton Error for %s\n", addr);
         exit(EXIT_FAILURE);
     }
     if (connect(sockfd, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(sockaddr_in)) >= 0) {
@@ -91,7 +92,11 @@ int clientInit(const char* addr, const int& port) {
     return sockfd;
 }
 
-void TCPClient
-(const int& fd) {
+
+void closeClient(const int& fd) {
+    close(fd);
+}
+
+void TCPClient(const int& fd) {
 
 }
