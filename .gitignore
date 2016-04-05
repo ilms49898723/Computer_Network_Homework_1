@@ -38,3 +38,8 @@ client
 # sublime text
 HW1.sublime-project
 HW1.sublime-workspace
+
+# program generated files
+/Download/
+/Upload/
+
