@@ -22,7 +22,7 @@ bool isValidArguments(int argc, char const *argv[]);
 int birdRead(const int& fd, char* buffer, const int& n);
 int birdWrite(const int& fd, const char* buffer, const int& n);
 int clientInit(const char* addr, const int& port);
-void tcpClient(const int& fd);
+void TCPClient(const int& fd);
 
 int main(int argc, char const *argv[])
 {
@@ -91,6 +91,7 @@ int clientInit(const char* addr, const int& port) {
     return sockfd;
 }
 
-void tcpClient(const int& fd) {
+void TCPClient
+(const int& fd) {
 
 }

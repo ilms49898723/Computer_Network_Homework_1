@@ -22,7 +22,7 @@ bool isValidArguments(int argc, char const *argv[]);
 int birdRead(const int& fd, char* buffer, const int& n);
 int birdWrite(const int& fd, const char* buffer, const int& n);
 int serverInit(const int& port);
-void tcpServer(const int& fd);
+void TCPServer(const int& fd);
 void sigChld(int signo);
 
 int main(int argc, char const *argv[])
@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
             strcpy(clientInfo, inet_ntoa(clientAddr.sin_addr));
             int clientPort = static_cast<int>(clientAddr.sin_port);
             fprintf(stdout, "Connection from %s port %d\n", clientInfo, clientPort);
-            tcpServer(clientfd);
+            TCPServer(clientfd);
             exit(EXIT_SUCCESS);
         }
         else {
@@ -109,7 +109,7 @@ int serverInit(const int& port) {
     return listenId;
 }
 
-void tcpServer(const int& fd) {
+void TCPServer(const int& fd) {
 
 }
 
