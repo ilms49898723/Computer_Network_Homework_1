@@ -19,7 +19,6 @@
 #include <ctime>
 #include <cctype>
 #include <string>
-#include <limits>
 
 constexpr int maxn = 2048;
 
@@ -124,36 +123,36 @@ class ClientFunc {
 public:
     static std::string pwd(const int& fd) {
         char buffer[maxn];
-        cleanBuffer(buffer, maxn);
+        cleanBuffer(buffer);
         sprintf(buffer, "pwd");
-        birdWrite(fd, buffer, maxn);
-        cleanBuffer(buffer, maxn);
-        birdRead(fd, buffer, maxn);
+        birdWrite(fd, buffer);
+        cleanBuffer(buffer);
+        birdRead(fd, buffer);
         return std::string(buffer);
     }
     static std::string ls(const int& fd) {
         char buffer[maxn];
-        cleanBuffer(buffer, maxn);
+        cleanBuffer(buffer);
         sprintf(buffer, "ls");
-        birdWrite(fd, buffer, maxn);
-        cleanBuffer(buffer, maxn);
-        birdRead(fd, buffer, maxn);
+        birdWrite(fd, buffer);
+        cleanBuffer(buffer);
+        birdRead(fd, buffer);
         std::string ret;
         int msgLen;
         sscanf(buffer, "%*s%*s%d", &msgLen); // format: length = %d
-        int byteRead = 0;
-        while ((byteRead += birdRead(fd, buffer, maxn)) < msgLen) {
-            ret.append(buffer);
+        for (int i = 0; i < msgLen; ++i) {
+            birdRead(fd, buffer);
+            ret += std::string(buffer) + "\n";
         }
         return ret;
     }
     static std::string c(const int& fd, const std::string& argu) {
         char buffer[maxn];
-        cleanBuffer(buffer, maxn);
+        cleanBuffer(buffer);
         sprintf(buffer, "c %s", argu.c_str());
-        birdWrite(fd, buffer, maxn);
-        cleanBuffer(buffer, maxn);
-        birdRead(fd, buffer, maxn);
+        birdWrite(fd, buffer);
+        cleanBuffer(buffer);
+        birdRead(fd, buffer);
         return std::string(buffer);
     }
     static std::string u(const int& fd, const std::string& argu) {
@@ -164,10 +163,10 @@ public:
     }
 
 private:
-    static void cleanBuffer(char* buffer, const int& n) {
+    static void cleanBuffer(char* buffer, const int& n = maxn) {
         memset(buffer, 0, sizeof(char) * n);
     }
-    static int birdRead(const int& fd, char* buffer, const int& n) {
+    static int birdRead(const int& fd, char* buffer, const int& n = maxn) {
         int byteRead = read(fd, buffer, n);
         if (byteRead < 0) {
             fprintf(stderr, "Read Error\n");
@@ -175,7 +174,7 @@ private:
         }
         return byteRead;
     }
-    static int birdWrite(const int& fd, const char* buffer, const int& n) {
+    static int birdWrite(const int& fd, const char* buffer, const int& n = maxn) {
         int byteWrite = write(fd, buffer, sizeof(char) * n);
         if (byteWrite < 0) {
             fprintf(stderr, "Write Error\n");
