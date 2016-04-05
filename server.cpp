@@ -216,11 +216,20 @@ private:
             basep = base.substr(1, base.length() - 2);
         }
         std::string ret = "";
+        bool backSlashFlag = false;
         for (unsigned i = 0; i < basep.length(); ++i) {
             if (basep[i] == '\\') {
+                backSlashFlag = true;
                 continue;
             }
+            if (backSlashFlag) {
+                backSlashFlag = false;
+            }
             ret += basep[i];
+        }
+        if (backSlashFlag) {
+            ret += " ";
+            backSlashFlag = false;
         }
         return ret;
     }
