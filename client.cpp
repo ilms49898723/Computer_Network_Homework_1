@@ -148,11 +148,54 @@ public:
             printf("%s\n", buffer);
         }
     }
-    static std::string u(const int& fd, const std::string& argu) {
-        return "";
+    static bool u(const int& fd, const std::string& argu) {
+        FILE* fp = fopen(argu.c_str(), "rb");
+        if (!fp) {
+            fprintf(stderr, "%s: File not exist\n", argu.c_str());
+            return false;
+        }
+        unsigned long fileSize;
+        struct stat st;
+        stat(argu.c_str(), &st);
+        fileSize = st.st_size;
+        char buffer[maxn];
+        clearBuffer(buffer);
+        sprintf(buffer, "u %s", argu.c_str());
+        birdWrite(fd, buffer);
+        clearBuffer(buffer);
+        birdRead(fd, buffer);
+        if (std::string(buffer) == "ERROR") {
+            fprintf(stderr, "Error On Remote Server\n");
+            fclose(fp);
+            return false;
+        }
+        clearBuffer(buffer);
+        sprintf(buffer, "filesize = %lu", fileSize);
+        birdWrite(fd, buffer);
+        birdWriteFile(fd, fp, fileSize);
+        return true;
     }
-    static std::string d(const int& fd, const std::string& argu) {
-        return "";
+    static bool d(const int& fd, const std::string& argu) {
+        char buffer[maxn];
+        clearBuffer(buffer);
+        sprintf(buffer, "d %s", argu.c_str());
+        birdWrite(fd, buffer);
+        clearBuffer(buffer);
+        birdRead(fd, buffer);
+        if (std::string(buffer) == "ERROR_FILE_NOT_EXIST") {
+            fprintf(stderr, "File Not Exist On Remote Server\n");
+            return false;
+        }
+        FILE* fp = fopen(argu.c_str(), "w");
+        if (!fp) {
+            fprintf(stderr, "File Open Error\n");
+            exit(EXIT_FAILURE);
+        }
+        unsigned long fileSize;
+        birdRead(fd, buffer);
+        sscanf(buffer, "%*s%*s%lu", &fileSize);
+        birdReadFile(fd, fp, fileSize);
+        return true;
     }
 
 private:
@@ -175,6 +218,40 @@ private:
         }
         return byteWrite;
     }
+    static void birdWriteFile(const int& fd, FILE* fp, const unsigned long& size) {
+        char buffer[maxn];
+        unsigned byteRead = 0u;
+        while (byteRead < size) {
+            int n = read(fileno(fp), buffer, maxn);
+            if (n < 0) {
+                fprintf(stderr, "Error When Reading File\n");
+                exit(EXIT_FAILURE);
+            }
+            byteRead += n;
+            int m = birdWrite(fd, buffer, n);
+            if (m != n) {
+                fprintf(stderr, "Error When Transmitting Data\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    static void birdReadFile(const int& fd, FILE* fp, const unsigned long& size) {
+        char buffer[maxn];
+        unsigned byteWrite = 0u;
+        while (byteWrite < size) {
+            int n = read(fd, buffer, maxn);
+            if (n < 0) {
+                fprintf(stderr, "Error When Receiving Data\n");
+                exit(EXIT_FAILURE);
+            }
+            byteWrite += n;
+            int m = write(fileno(fp), buffer, n);
+            if (m != n) {
+                fprintf(stderr, "Error When Writing File\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 };
 
 bool isValidArguments(int argc, char const *argv[]);
@@ -186,7 +263,7 @@ void printInfo();
 void trimNewLine(char* str);
 std::string toLowerString(const std::string& src);
 std::string trimSpaceLE(const std::string& str);
-std::string nextArgument(FILE* fin);
+std::string nextArgument(FILE* fp);
 
 int main(int argc, char const *argv[])
 {
@@ -288,14 +365,12 @@ void TCPClient(const int& fd, const char* host) {
         }
         else if (command == "u") {
             std::string argu = nextArgument(stdin);
-            printf("%s\n", ClientFunc::u(fd, argu).c_str());
         }
         else if (command == "d") {
             std::string argu = nextArgument(stdin);
-            printf("%s\n", ClientFunc::d(fd, argu).c_str());
         }
         else {
-            printf("%s: Command not found\n", command.c_str());
+            fprintf(stderr, "%s: Command not found\n", command.c_str());
         }
     }
 }
@@ -343,9 +418,9 @@ std::string toLowerString(const std::string& src) {
     return ret;
 }
 
-std::string nextArgument(FILE* fin) {
+std::string nextArgument(FILE* fp) {
     char argu[maxn];
-    if (!fgets(argu, maxn, fin)) {
+    if (!fgets(argu, maxn, fp)) {
         fprintf(stderr, "Read Command Error\n");
         exit(EXIT_FAILURE);
     }

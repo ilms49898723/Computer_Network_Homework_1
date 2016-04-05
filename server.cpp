@@ -155,9 +155,48 @@ public:
         sprintf(buffer, "%s", ret.c_str());
         birdWrite(fd, buffer);
     }
-    static void u(const int& fd) {
+    static void u(const int& fd, const std::string& argu) {
+        char buffer[maxn];
+        FILE* fp = fopen(argu.c_str(), "w");
+        if (!fp) {
+            clearBuffer(buffer);
+            sprintf(buffer, "ERROR");
+            birdWrite(fd, buffer);
+            return;
+        }
+        else {
+            clearBuffer(buffer);
+            sprintf(buffer, "OK");
+            birdWrite(fd, buffer);
+        }
+        unsigned long fileSize;
+        birdRead(fd, buffer);
+        sscanf(buffer, "%*s%*s%lu", &fileSize);
+        birdReadFile(fd, fp, fileSize);
     }
-    static void d(const int& fd) {
+    static void d(const int& fd, const std::string& argu) {
+        char buffer[maxn];
+        FILE* fp = fopen(argu.c_str(), "rb");
+        if (!fp) {
+            clearBuffer(buffer);
+            sprintf(buffer, "ERROR_FILE_NOT_EXIST");
+            birdWrite(fd, buffer);
+            return;
+        }
+        else {
+            clearBuffer(buffer);
+            sprintf(buffer, "FILE_EXISTS");
+            birdWrite(fd, buffer);
+        }
+        unsigned long fileSize;
+        struct stat st;
+        stat(argu.c_str(), &st);
+        fileSize = st.st_size;
+        clearBuffer(buffer);
+        sprintf(buffer, "filesize = %lu", fileSize);
+        birdWrite(fd, buffer);
+        birdWriteFile(fd, fp, fileSize);
+        return;
     }
     static void undef(const int& fd, const std::string& command) {
         char buffer[maxn];
@@ -185,6 +224,40 @@ private:
             exit(EXIT_FAILURE);
         }
         return byteWrite;
+    }
+    static void birdWriteFile(const int& fd, FILE* fp, const unsigned long& size) {
+        char buffer[maxn];
+        unsigned byteRead = 0u;
+        while (byteRead < size) {
+            int n = read(fileno(fp), buffer, maxn);
+            if (n < 0) {
+                fprintf(stderr, "Error When Reading File\n");
+                exit(EXIT_FAILURE);
+            }
+            byteRead += n;
+            int m = birdWrite(fd, buffer, n);
+            if (m != n) {
+                fprintf(stderr, "Error When Transmitting Data\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    static void birdReadFile(const int& fd, FILE* fp, const unsigned long& size) {
+        char buffer[maxn];
+        unsigned byteWrite = 0u;
+        while (byteWrite < size) {
+            int n = read(fd, buffer, maxn);
+            if (n < 0) {
+                fprintf(stderr, "Error When Receiving Data\n");
+                exit(EXIT_FAILURE);
+            }
+            byteWrite += n;
+            int m = write(fileno(fp), buffer, n);
+            if (m != n) {
+                fprintf(stderr, "Error When Writing File\n");
+                exit(EXIT_FAILURE);
+            }
+        }
     }
 };
 
@@ -303,7 +376,7 @@ void TCPServer(const int& fd) {
             else {
                 std::string argu(command.c_str() + 1);
                 argu = trimSpaceLE(argu);
-                ServerFunc::u(fd);
+                ServerFunc::u(fd, argu);
             }
         }
         else if (command.find("d") == 0) {
@@ -315,7 +388,7 @@ void TCPServer(const int& fd) {
             else {
                 std::string argu(command.c_str() + 1);
                 argu = trimSpaceLE(argu);
-                ServerFunc::d(fd);
+                ServerFunc::d(fd, argu);
             }
         }
         else {
