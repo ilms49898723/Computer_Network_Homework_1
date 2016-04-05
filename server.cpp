@@ -19,10 +19,181 @@
 #include <ctime>
 #include <cctype>
 #include <string>
+#include <vector>
+
+constexpr int maxn = 2048;
+
+class WorkingDirectory {
+public:
+    static bool isDirExist(const std::string& path) {
+        DIR* dir = opendir(path.c_str());
+        if (dir) {
+            closedir(dir);
+            return true;
+        }
+        return false;
+    }
+
+public:
+    WorkingDirectory() {
+        path = "";
+    }
+    virtual ~WorkingDirectory() {
+
+    }
+    void init(const std::string& initPath) {
+        path = convertPath(initPath);
+        startupPath = convertPath(initPath);
+    }
+    std::string getPath() const {
+        return path;
+    }
+    std::string getStartupPath() const {
+        return startupPath;
+    }
+    void changeDir(const std::string& newPath) {
+        if (newPath.length() <= 0u) {
+            return;
+        }
+        if (newPath[0] == '/') {
+            if (WorkingDirectory::isDirExist(newPath)) {
+                path = convertPath(newPath);
+            }
+            else {
+                fprintf(stderr, "%s: No such file or directory\n", newPath.c_str());
+            }
+        }
+        else {
+            std::string tmpNewPath = path;
+            std::string tmpPath = newPath;
+            std::string subPath;
+            while ((subPath = nextSubDir(tmpPath)) != "") {
+                if (subPath == "." || subPath == "./") {
+                    continue;
+                }
+                else if (subPath == ".." || subPath == "../") {
+                    int pos = subPath.rfind("/");
+                    tmpNewPath = tmpNewPath.substr(0, pos);
+                }
+                else {
+                    pathCat(tmpNewPath, subPath);
+                }
+            }
+            if (WorkingDirectory::isDirExist(tmpNewPath)) {
+                path = tmpNewPath;
+            }
+            else {
+                fprintf(stderr, "%s: No such file or directory\n", tmpNewPath.c_str());
+            }
+        }
+    }
+
+private:
+    std::string path;
+    std::string startupPath;
+
+private:
+    std::string nextSubDir(std::string& path) {
+        if (path.find("/") == std::string::npos) {
+            return "";
+        }
+        int pos = path.find("/");
+        std::string ret = path.substr(0, pos);
+        path = path.substr(pos + 1);
+        return ret;
+    }
+    std::string convertPath(const std::string& base) {
+        std::string ret = base;
+        if (ret.back() == '/') {
+            ret.pop_back();
+        }
+        return ret;
+    }
+    void pathCat(std::string& base, const std::string& append) {
+        if (base.back() != '/') {
+            base.append("/");
+        }
+        base += append;
+        if (base.back() == '/') {
+            base.pop_back();
+        }
+    }
+};
+
+class ServerFunc {
+public:
+    static std::string nextCommand(const int& fd) {
+        char buffer[maxn];
+        cleanBuffer(buffer);
+        birdRead(fd, buffer);
+        return std::string(buffer);
+    }
+    static std::string pwd(const int& fd, const WorkingDirectory& wd) {
+        char buffer[maxn];
+        cleanBuffer(buffer);
+        sprintf(buffer, "%s", wd.getPath().c_str());
+        birdWrite(fd, buffer);
+    }
+    static std::string ls(const int& fd, const WorkingDirectory& wd) {
+        DIR* dir = opendir(wd.getPath().c_str());
+        if (!dir) {
+            char buffer[maxn];
+            cleanBuffer(buffer);
+            sprintf(buffer, "Open directory Error!");
+            birdWrite(fd, buffer);
+        }
+        else {
+            dirent *dirst;
+            std::vector<std::string> fileList;
+            while ((dirst = readdir(dir))) {
+                std::string name(dirst->d_name);
+                if (dirst->d_type == DT_DIR) {
+                    name += "/";
+                }
+                fileList.push_back(name);
+            }
+            char buffer[maxn];
+            cleanBuffer(buffer);
+            sprintf(buffer, "length = %d", static_cast<int>(fileList.size()));
+            birdWrite(fd, buffer);
+            for (unsigned i = 0; i < fileList.size(); ++i) {
+                cleanBuffer(buffer);
+                sprintf(buffer, "%s", name.c_str());
+                birdWrite(fd, buffer);
+            }
+            closedir(dir);
+        }
+    }
+    static std::string c(const int& fd, const std::string& argu) {
+    }
+    static std::string u(const int& fd, const std::string& argu) {
+    }
+    static std::string d(const int& fd, const std::string& argu) {
+    }
+
+private:
+    static void cleanBuffer(char* buffer, const int& n = maxn) {
+        memset(buffer, 0, sizeof(char) * n);
+    }
+    static int birdRead(const int& fd, char* buffer, const int& n = maxn) {
+        int byteRead = read(fd, buffer, n);
+        if (byteRead < 0) {
+            fprintf(stderr, "Read Error\n");
+            exit(EXIT_FAILURE);
+        }
+        return byteRead;
+    }
+    static int birdWrite(const int& fd, const char* buffer, const int& n = maxn) {
+        int byteWrite = write(fd, buffer, sizeof(char) * n);
+        if (byteWrite < 0) {
+            fprintf(stderr, "Write Error\n");
+            exit(EXIT_FAILURE);
+        }
+        return byteWrite;
+    }
+};
 
 bool isValidArguments(int argc, char const *argv[]);
-int birdRead(const int& fd, char* buffer, const int& n);
-int birdWrite(const int& fd, const char* buffer, const int& n);
 int serverInit(const int& port);
 void TCPServer(const int& fd);
 void sigChld(int signo);
@@ -79,22 +250,6 @@ bool isValidArguments(int argc, char const *argv[]) {
         }
     }
     return true;
-}
-
-int birdRead(const int& fd, char* buffer, const int& n) {
-    int byteRead = read(fd, buffer, n);
-    if (byteRead < 0) {
-        fprintf(stderr, "Read Error\n");
-    }
-    return byteRead;
-}
-
-int birdWrite(const int& fd, const char* buffer, const int& n) {
-    int byteWrite = write(fd, buffer, sizeof(char) * n);
-    if (byteWrite < 0) {
-        fprintf(stderr, "Write Error\n");
-    }
-    return byteWrite;
 }
 
 int serverInit(const int& port) {
