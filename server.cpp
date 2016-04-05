@@ -73,10 +73,10 @@ public:
                     continue;
                 }
                 else if (subPath == ".." || subPath == "../") {
-                    int pos = subPath.rfind("/");
-                    if (pos == static_cast<int>(std::string::npos)) {
+                    if (tmpNewPath == "/") {
                         continue;
                     }
+                    int pos = tmpNewPath.rfind("/");
                     tmpNewPath = tmpNewPath.substr(0, pos);
                 }
                 else {
@@ -99,7 +99,9 @@ private:
 private:
     std::string nextSubDir(std::string& path) {
         if (path.find("/") == std::string::npos) {
-            return "";
+            std::string ret = path;
+            path = "";
+            return ret;
         }
         int pos = path.find("/");
         std::string ret = path.substr(0, pos);
@@ -169,7 +171,8 @@ public:
             closedir(dir);
         }
     }
-    static void c(const int& fd) {
+    static void cd(const int& fd, const std::string& argu, WorkingDirectory& wd) {
+        wd.changeDir(argu);
     }
     static void u(const int& fd) {
     }
@@ -209,6 +212,7 @@ int serverInit(const int& port);
 void TCPServer(const int& fd);
 void getCWD(char* path, const int& n);
 void trimNewLine(char* str);
+std::string trimSpaceLE(const std::string& str);
 std::string toLowerString(const std::string& src);
 void sigChld(int signo);
 
@@ -301,14 +305,41 @@ void TCPServer(const int& fd) {
         else if (command == "ls") {
             ServerFunc::ls(fd, wd);
         }
-        else if (command == "c") {
-            ServerFunc::c(fd);
+        else if (command.find("cd") == 0) {
+            char op[maxn];
+            sscanf(command.c_str(), "%s", op);
+            if (strcmp(op, "cd")) {
+                ServerFunc::undef(fd, op);
+            }
+            else {
+                std::string argu(command.c_str() + 2);
+                argu = trimSpaceLE(argu);
+                ServerFunc::cd(fd, argu, wd);
+            }
         }
-        else if (command == "u") {
-            ServerFunc::u(fd);
+        else if (command.find("u") == 0) {
+            char op[maxn];
+            sscanf(command.c_str(), "%s", op);
+            if (strcmp(op, "u")) {
+                ServerFunc::undef(fd, op);
+            }
+            else {
+                std::string argu(command.c_str() + 1);
+                argu = trimSpaceLE(argu);
+                ServerFunc::u(fd);
+            }
         }
-        else if (command == "d") {
-            ServerFunc::d(fd);
+        else if (command.find("d") == 0) {
+            char op[maxn];
+            sscanf(command.c_str(), "%s", op);
+            if (strcmp(op, "d")) {
+                ServerFunc::undef(fd, op);
+            }
+            else {
+                std::string argu(command.c_str() + 1);
+                argu = trimSpaceLE(argu);
+                ServerFunc::d(fd);
+            }
         }
         else {
             ServerFunc::undef(fd, command);
@@ -326,6 +357,23 @@ void getCWD(char* dst, const int& n) {
 void trimNewLine(char* str) {
     if (str[strlen(str) - 1] == '\n') {
         str[strlen(str) - 1] = '\0';
+    }
+}
+
+std::string trimSpaceLE(const std::string& str) {
+    int len = str.length();
+    int startp = 0, endp = str.length() - 1;
+    while (startp < len && str.at(startp) == ' ') {
+        ++startp;
+    }
+    while (endp >= 0 && str.at(endp) == ' ') {
+        --endp;
+    }
+    if (startp > endp) {
+        return "";
+    }
+    else {
+        return str.substr(startp, endp - startp + 1);
     }
 }
 

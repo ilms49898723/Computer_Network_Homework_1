@@ -71,10 +71,10 @@ public:
                     continue;
                 }
                 else if (subPath == ".." || subPath == "../") {
-                    int pos = subPath.rfind("/");
-                    if (pos == static_cast<int>(std::string::npos)) {
+                    if (tmpNewPath == "/") {
                         continue;
                     }
+                    int pos = tmpNewPath.rfind("/");
                     tmpNewPath = tmpNewPath.substr(0, pos);
                 }
                 else {
@@ -97,7 +97,9 @@ private:
 private:
     std::string nextSubDir(std::string& path) {
         if (path.find("/") == std::string::npos) {
-            return "";
+            std::string ret = path;
+            path = "";
+            return ret;
         }
         int pos = path.find("/");
         std::string ret = path.substr(0, pos);
@@ -153,15 +155,18 @@ public:
             birdRead(fd, buffer);
             ret += std::string(buffer) + "\n";
         }
+        if (ret.back() == '\n') {
+            ret.pop_back();
+        }
         return ret;
     }
-    static std::string c(const int& fd, const std::string& argu) {
+    static std::string cd(const int& fd, const std::string& argu) {
         char buffer[maxn];
         cleanBuffer(buffer);
-        sprintf(buffer, "c %s", argu.c_str());
+        sprintf(buffer, "cd %s", argu.c_str());
         birdWrite(fd, buffer);
         cleanBuffer(buffer);
-        birdRead(fd, buffer);
+        //birdRead(fd, buffer);
         return std::string(buffer);
     }
     static std::string u(const int& fd, const std::string& argu) {
@@ -202,6 +207,7 @@ void printInfo();
 void getCWD(char* path, const int& n);
 void trimNewLine(char* str);
 std::string toLowerString(const std::string& src);
+std::string trimSpaceLE(const std::string& str);
 std::string nextArgument(FILE* fin);
 
 int main(int argc, char const *argv[])
@@ -278,8 +284,13 @@ void TCPClient(const int& fd) {
     char cwd[maxn];
     getCWD(cwd, maxn);
     wd.init(cwd);
+    printInfo();
     char userInput[maxn];
-    while (scanf("%s", userInput) == 1) {
+    while (true) {
+        printf("$: ");
+        if (scanf("%s", userInput) != 1) {
+            break;
+        }
         std::string command = toLowerString(userInput);
         if (command == "q") {
             ClientFunc::q(fd);
@@ -291,9 +302,9 @@ void TCPClient(const int& fd) {
         else if (command == "ls") {
             printf("%s\n", ClientFunc::ls(fd).c_str());
         }
-        else if (command == "c") {
+        else if (command == "cd") {
             std::string argu = nextArgument(stdin);
-            printf("%s\n", ClientFunc::c(fd, argu).c_str());
+            printf("%s\n", ClientFunc::cd(fd, argu).c_str());
         }
         else if (command == "u") {
             std::string argu = nextArgument(stdin);
@@ -310,12 +321,14 @@ void TCPClient(const int& fd) {
 }
 
 void printInfo() {
+    puts("");
     puts("pwd: print current working directory (remote)");
     puts("ls: list information about the files (in current directory) (remote)");
-    puts("c <path>: change working directory (remote)");
+    puts("cd <path>: change working directory (remote)");
     puts("u <filepath>: upload file to the working directory (remote)");
     puts("d <filepath>: download file to Download Folder (local)");
     puts("q: quit");
+    puts("");
 }
 
 void getCWD(char* dst, const int& n) {
@@ -331,6 +344,23 @@ void trimNewLine(char* str) {
     }
 }
 
+std::string trimSpaceLE(const std::string& str) {
+    int len = str.length();
+    int startp = 0, endp = str.length() - 1;
+    while (startp < len && str.at(startp) == ' ') {
+        ++startp;
+    }
+    while (endp >= 0 && str.at(endp) == ' ') {
+        --endp;
+    }
+    if (startp > endp) {
+        return "";
+    }
+    else {
+        return str.substr(startp, endp - startp + 1);
+    }
+}
+
 std::string toLowerString(const std::string& src) {
     std::string ret;
     for (unsigned i = 0; i < src.length(); ++i) {
@@ -341,14 +371,12 @@ std::string toLowerString(const std::string& src) {
 
 std::string nextArgument(FILE* fin) {
     char argu[maxn];
-    if (scanf(" ") < 0) {
-        fprintf(stderr, "Read Command Error\n");
-        exit(EXIT_FAILURE);
-    }
     if (!fgets(argu, maxn, fin)) {
         fprintf(stderr, "Read Command Error\n");
         exit(EXIT_FAILURE);
     }
     trimNewLine(argu);
-    return std::string(argu);
+    std::string arguStr(argu);
+    arguStr = trimSpaceLE(arguStr);
+    return arguStr;
 }
