@@ -20,6 +20,7 @@
 #include <cctype>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 constexpr int maxn = 2048;
 
@@ -155,6 +156,7 @@ public:
                 }
                 fileList.push_back(name);
             }
+            std::sort(fileList.begin(), fileList.end());
             char buffer[maxn];
             cleanBuffer(buffer);
             sprintf(buffer, "length = %d", static_cast<int>(fileList.size()));
@@ -167,11 +169,11 @@ public:
             closedir(dir);
         }
     }
-    static void c(const int& fd, const std::string& argu) {
+    static void c(const int& fd) {
     }
-    static void u(const int& fd, const std::string& argu) {
+    static void u(const int& fd) {
     }
-    static void d(const int& fd, const std::string& argu) {
+    static void d(const int& fd) {
     }
 
 private:
@@ -199,6 +201,9 @@ private:
 bool isValidArguments(int argc, char const *argv[]);
 int serverInit(const int& port);
 void TCPServer(const int& fd);
+void getCWD(char* path, const int& n);
+void trimNewLine(char* str);
+std::string toLowerString(const std::string& src);
 void sigChld(int signo);
 
 int main(int argc, char const *argv[])
@@ -241,7 +246,6 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-
 bool isValidArguments(int argc, char const *argv[]) {
     if (argc != 2) {
         return false;
@@ -275,7 +279,53 @@ int serverInit(const int& port) {
 }
 
 void TCPServer(const int& fd) {
+    WorkingDirectory wd;
+    char cwd[maxn];
+    getCWD(cwd, maxn);
+    wd.init(cwd);
+    while (true) {
+        std::string command = ServerFunc::nextCommand(fd);
+        printf("get command %s\n", command.c_str());
+        if (command == "q") {
+            break;
+        }
+        else if (command == "pwd") {
+            ServerFunc::pwd(fd, wd);
+        }
+        else if (command == "ls") {
+            ServerFunc::ls(fd, wd);
+        }
+        else if (command == "c") {
+            ServerFunc::c(fd);
+        }
+        else if (command == "u") {
+            ServerFunc::u(fd);
+        }
+        else if (command == "d") {
+            ServerFunc::d(fd);
+        }
+    }
+}
 
+void getCWD(char* dst, const int& n) {
+    if (!getcwd(dst, n)) {
+        fprintf(stderr, "Getcwd Error\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void trimNewLine(char* str) {
+    if (str[strlen(str) - 1] == '\n') {
+        str[strlen(str) - 1] = '\0';
+    }
+}
+
+std::string toLowerString(const std::string& src) {
+    std::string ret;
+    for (unsigned i = 0; i < src.length(); ++i) {
+        ret += tolower(src[i]);
+    }
+    return ret;
 }
 
 void sigChld(int signo) {

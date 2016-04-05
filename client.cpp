@@ -124,6 +124,12 @@ private:
 
 class ClientFunc {
 public:
+    static void q(const int& fd) {
+        char buffer[maxn];
+        cleanBuffer(buffer);
+        sprintf(buffer, "q");
+        birdWrite(fd, buffer);
+    }
     static std::string pwd(const int& fd) {
         char buffer[maxn];
         cleanBuffer(buffer);
@@ -140,7 +146,7 @@ public:
         birdWrite(fd, buffer);
         cleanBuffer(buffer);
         birdRead(fd, buffer);
-        std::string ret;
+        std::string ret = "";
         int msgLen;
         sscanf(buffer, "%*s%*s%d", &msgLen); // format: length = %d
         for (int i = 0; i < msgLen; ++i) {
@@ -196,6 +202,7 @@ void printInfo();
 void getCWD(char* path, const int& n);
 void trimNewLine(char* str);
 std::string toLowerString(const std::string& src);
+std::string nextArgument(FILE* fin);
 
 int main(int argc, char const *argv[])
 {
@@ -272,9 +279,10 @@ void TCPClient(const int& fd) {
     getCWD(cwd, maxn);
     wd.init(cwd);
     char userInput[maxn];
-    while (scanf("%s ", userInput) == 1) {
+    while (scanf("%s", userInput) == 1) {
         std::string command = toLowerString(userInput);
         if (command == "q") {
+            ClientFunc::q(fd);
             break;
         }
         else if (command == "pwd") {
@@ -284,30 +292,15 @@ void TCPClient(const int& fd) {
             printf("%s\n", ClientFunc::ls(fd).c_str());
         }
         else if (command == "c") {
-            char argu[maxn];
-            if (!fgets(argu, maxn, stdin)) {
-                fprintf(stderr, "Read Command Error\n");
-                exit(EXIT_FAILURE);
-            }
-            trimNewLine(argu);
+            std::string argu = nextArgument(stdin);
             printf("%s\n", ClientFunc::c(fd, argu).c_str());
         }
         else if (command == "u") {
-            char argu[maxn];
-            if (!fgets(argu, maxn, stdin)) {
-                fprintf(stderr, "Read Command Error\n");
-                exit(EXIT_FAILURE);
-            }
-            trimNewLine(argu);
+            std::string argu = nextArgument(stdin);
             printf("%s\n", ClientFunc::u(fd, argu).c_str());
         }
         else if (command == "d") {
-            char argu[maxn];
-            if (!fgets(argu, maxn, stdin)) {
-                fprintf(stderr, "Read Command Error\n");
-                exit(EXIT_FAILURE);
-            }
-            trimNewLine(argu);
+            std::string argu = nextArgument(stdin);
             printf("%s\n", ClientFunc::d(fd, argu).c_str());
         }
         else {
@@ -344,4 +337,18 @@ std::string toLowerString(const std::string& src) {
         ret += tolower(src[i]);
     }
     return ret;
+}
+
+std::string nextArgument(FILE* fin) {
+    char argu[maxn];
+    if (scanf(" ") < 0) {
+        fprintf(stderr, "Read Command Error\n");
+        exit(EXIT_FAILURE);
+    }
+    if (!fgets(argu, maxn, fin)) {
+        fprintf(stderr, "Read Command Error\n");
+        exit(EXIT_FAILURE);
+    }
+    trimNewLine(argu);
+    return std::string(argu);
 }
