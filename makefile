@@ -4,10 +4,10 @@ CC := g++
 
 CFLAGS := -std=c++11 -Wall -Os
 
-.SUFFIXS =
+.SUFFIXS :
 
-.PHONY =
-.PHONY = server client clean
+.PHONY :
+.PHONY : all server client
 
 all: server client
 
