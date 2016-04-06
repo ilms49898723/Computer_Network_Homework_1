@@ -90,25 +90,25 @@ class ClientFunc {
 public:
     static void q(const int& fd) {
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "q");
         birdWrite(fd, buffer);
     }
     static std::string pwd(const int& fd) {
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "pwd");
         birdWrite(fd, buffer);
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         birdRead(fd, buffer);
         return std::string(buffer);
     }
     static std::string ls(const int& fd) {
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "ls");
         birdWrite(fd, buffer);
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         birdRead(fd, buffer);
         std::string ret = "";
         int msgLen;
@@ -125,10 +125,10 @@ public:
     static void cd(const int& fd, const std::string& argu) {
         const std::string nargu = argu;
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "cd %s", nargu.c_str());
         birdWrite(fd, buffer);
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) != "") {
             printf("%s\n", buffer);
@@ -146,10 +146,10 @@ public:
         stat(nargu.c_str(), &st);
         fileSize = st.st_size;
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "u %s", argu.c_str());
         birdWrite(fd, buffer);
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) == "ERROR") {
             fprintf(stderr, "Error Occurs On Remote Server\n");
@@ -157,7 +157,7 @@ public:
             return false;
         }
         printf("Upload File \"%s\"\n", nargu.c_str());
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
         printf("File size: %lu bytes\n", fileSize);
@@ -168,10 +168,10 @@ public:
     static bool d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         const std::string nargu = processArgument(argu);
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "d %s", argu.c_str());
         birdWrite(fd, buffer);
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) == "FILE_NOT_EXIST") {
             fprintf(stderr, "%s: File Not Exists On Remote Server\n", nargu.c_str());
@@ -235,7 +235,7 @@ private:
         }
         return ret;
     }
-    static void clearBuffer(char* buffer, const int& n = maxn) {
+    static void cleanBuffer(char *buffer, const int &n = maxn) {
         memset(buffer, 0, sizeof(char) * n);
     }
     static int birdRead(const int& fd, char* buffer, const int& n = maxn) {

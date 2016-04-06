@@ -92,13 +92,13 @@ class ServerFunc {
 public:
     static std::string nextCommand(const int& fd) {
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         birdRead(fd, buffer);
         return std::string(buffer);
     }
     static void pwd(const int& fd, const WorkingDirectory& wd) {
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "%s", wd.getPath().c_str());
         birdWrite(fd, buffer);
     }
@@ -106,7 +106,7 @@ public:
         DIR* dir = opendir(wd.getPath().c_str());
         if (!dir) {
             char buffer[maxn];
-            clearBuffer(buffer);
+            cleanBuffer(buffer);
             sprintf(buffer, "Open directory Error!");
             birdWrite(fd, buffer);
         }
@@ -122,11 +122,11 @@ public:
             }
             std::sort(fileList.begin(), fileList.end());
             char buffer[maxn];
-            clearBuffer(buffer);
+            cleanBuffer(buffer);
             sprintf(buffer, "length = %d", static_cast<int>(fileList.size()));
             birdWrite(fd, buffer);
             for (unsigned i = 0; i < fileList.size(); ++i) {
-                clearBuffer(buffer);
+                cleanBuffer(buffer);
                 sprintf(buffer, "%s", fileList[i].c_str());
                 birdWrite(fd, buffer);
             }
@@ -137,7 +137,7 @@ public:
         const std::string nargu = processArgument(argu);
         std::string ret = wd.changeDir(nargu);
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "%s", ret.c_str());
         birdWrite(fd, buffer);
     }
@@ -153,13 +153,13 @@ public:
         }
         FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
-            clearBuffer(buffer);
+            cleanBuffer(buffer);
             sprintf(buffer, "ERROR");
             birdWrite(fd, buffer);
             return;
         }
         else {
-            clearBuffer(buffer);
+            cleanBuffer(buffer);
             sprintf(buffer, "OK");
             birdWrite(fd, buffer);
         }
@@ -173,13 +173,13 @@ public:
         char buffer[maxn];
         FILE* fp = fopen(nargu.c_str(), "rb");
         if (!fp) {
-            clearBuffer(buffer);
+            cleanBuffer(buffer);
             sprintf(buffer, "FILE_NOT_EXIST");
             birdWrite(fd, buffer);
             return;
         }
         else {
-            clearBuffer(buffer);
+            cleanBuffer(buffer);
             sprintf(buffer, "FILE_EXISTS");
             birdWrite(fd, buffer);
         }
@@ -187,7 +187,7 @@ public:
         struct stat st;
         stat(nargu.c_str(), &st);
         fileSize = st.st_size;
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
         birdWriteFile(fd, fp, fileSize);
@@ -195,7 +195,7 @@ public:
     }
     static void undef(const int& fd, const std::string& command) {
         char buffer[maxn];
-        clearBuffer(buffer);
+        cleanBuffer(buffer);
         sprintf(buffer, "%s: Command not found", command.c_str());
         birdWrite(fd, buffer);
     }
@@ -236,7 +236,7 @@ private:
         }
         return ret;
     }
-    static void clearBuffer(char* buffer, const int& n = maxn) {
+    static void cleanBuffer(char *buffer, const int &n = maxn) {
         memset(buffer, 0, sizeof(char) * n);
     }
     static int birdRead(const int& fd, char* buffer, const int& n = maxn) {
