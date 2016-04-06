@@ -72,7 +72,7 @@ private:
     void updatePath() {
         char buffer[maxn];
         if (!getcwd(buffer, maxn)) {
-            fprintf(stderr, "getcwd Error\n");
+            fprintf(stderr, "getcwd Error\nProgram Terminated!\n");
             exit(EXIT_FAILURE);
         }
         path = buffer;
@@ -151,8 +151,8 @@ public:
         birdWrite(fd, buffer);
         cleanBuffer(buffer);
         birdRead(fd, buffer);
-        if (std::string(buffer) == "ERROR") {
-            fprintf(stderr, "Error Occurs On Remote Server\n");
+        if (std::string(buffer) == "ERROR_OPEN_FILE") {
+            fprintf(stderr, "Can not open file %s on Remote Server\n", getFileName(argu.c_str()).c_str());
             fclose(fp);
             return false;
         }
@@ -163,6 +163,7 @@ public:
         printf("File size: %lu bytes\n", fileSize);
         birdWriteFile(fd, fp, fileSize);
         printf("Upload File \"%s\" Completed\n", getFileName(nargu).c_str());
+        fclose(fp);
         return true;
     }
     static bool d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
@@ -186,9 +187,15 @@ public:
         }
         FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
-            fprintf(stderr, "File Open Error\n");
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "%s: File Open Error\n", filename.c_str());
+            cleanBuffer(buffer);
+            sprintf(buffer, "ERROR_OPEN_FILE");
+            birdWrite(fd, buffer);
+            return false;
         }
+        cleanBuffer(buffer);
+        sprintf(buffer, "OK");
+        birdWrite(fd, buffer);
         printf("Download File \"%s\"\n", getFileName(nargu).c_str());
         unsigned long fileSize;
         birdRead(fd, buffer);
@@ -196,6 +203,7 @@ public:
         printf("File size: %lu bytes\n", fileSize);
         birdReadFile(fd, fp, fileSize);
         printf("Download File \"%s\" Completed\n", getFileName(nargu).c_str());
+        fclose(fp);
         return true;
     }
 

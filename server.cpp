@@ -154,7 +154,7 @@ public:
         FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
             cleanBuffer(buffer);
-            sprintf(buffer, "ERROR");
+            sprintf(buffer, "ERROR_OPEN_FILE");
             birdWrite(fd, buffer);
             return;
         }
@@ -167,6 +167,7 @@ public:
         birdRead(fd, buffer);
         sscanf(buffer, "%*s%*s%lu", &fileSize);
         birdReadFile(fd, fp, fileSize);
+        fclose(fp);
     }
     static void d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         const std::string nargu = processArgument(argu);
@@ -183,6 +184,11 @@ public:
             sprintf(buffer, "FILE_EXISTS");
             birdWrite(fd, buffer);
         }
+        cleanBuffer(buffer);
+        birdRead(fd, buffer);
+        if (std::string(buffer) == "ERROR_OPEN_FILE") {
+            return;
+        }
         unsigned long fileSize;
         struct stat st;
         stat(nargu.c_str(), &st);
@@ -191,6 +197,7 @@ public:
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
         birdWriteFile(fd, fp, fileSize);
+        fclose(fp);
         return;
     }
     static void undef(const int& fd, const std::string& command) {
@@ -331,7 +338,7 @@ int main(int argc, char const *argv[])
             fprintf(stdout, "Connection from %s, port %d\n", clientInfo, clientPort);
             TCPServer(clientfd);
             close(clientfd);
-            fprintf(stdout, "Client %s terminated\n", clientInfo);
+            fprintf(stdout, "Client %s:%d terminated\n", clientInfo, clientPort);
             exit(EXIT_SUCCESS);
         }
         else {
