@@ -4,24 +4,18 @@ CC := g++
 
 CFLAGS := -std=c++11 -Wall -Os
 
-OBJS := server.o client.o
-
 .SUFFIXS =
-.SUFFIXS = .cpp .o
 
 .PHONY =
-.PHONY = all server client clean
+.PHONY = server client clean
 
 all: server client
 
-server: server.o
-	${CC} ${CFLAGS} -o $@ $<
+server:
+	${CC} ${CFLAGS} -o $@ $@.cpp
 
-client: client.o
-	${CC} ${CFLAGS} -o $@ $<
-
-.cpp.o:
-	${CC} ${CFLAGS} -c $<
+client:
+	${CC} ${CFLAGS} -o $@ $@.cpp
 
 clean:
 	-rm -f *.o server client
