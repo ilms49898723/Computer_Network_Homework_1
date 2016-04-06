@@ -134,7 +134,7 @@ public:
             printf("%s\n", buffer);
         }
     }
-    static bool u(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
+    static bool u(const int& fd, const std::string& argu) {
         const std::string nargu = processArgument(argu);
         int chk = isExist(nargu);
         if (chk == -2) {
@@ -177,15 +177,7 @@ public:
             fclose(fp);
             return false;
         }
-        std::string fileLocate;
-        if (wd.getStartupPath().back() == '/') {
-            fileLocate = wd.getStartupPath();
-        }
-        else {
-            fileLocate = wd.getStartupPath() + "/";
-        }
-        printf("Upload File \"%s\"\n", nargu.c_str());
-        printf("File Location: %s\n", fileLocate.c_str());
+        printf("Upload File \"%s\"\n", getFileName(nargu).c_str());
         cleanBuffer(buffer);
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
@@ -224,14 +216,11 @@ public:
             return false;
         }
         std::string filename = getFileName(nargu);
-        std::string targetFolder;
         if (wd.getStartupPath().back() == '/') {
             filename = wd.getStartupPath() + "Download/" + filename;
-            targetFolder = wd.getStartupPath() + "Download/";
         }
         else {
             filename = wd.getStartupPath() + "/Download/" + filename;
-            targetFolder = wd.getStartupPath() + "/Download/";
         }
         FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
@@ -245,7 +234,6 @@ public:
         sprintf(buffer, "OK");
         birdWrite(fd, buffer);
         printf("Download File \"%s\"\n", getFileName(nargu).c_str());
-        printf("Download Folder: %s\n", targetFolder.c_str());
         unsigned long fileSize;
         birdRead(fd, buffer);
         sscanf(buffer, "%*s%*s%lu", &fileSize);
@@ -539,7 +527,7 @@ void TCPClient(const int& fd, const char* host) {
                 }
             }
             else {
-                ClientFunc::u(fd, argu, wd);
+                ClientFunc::u(fd, argu);
             }
         }
         else if (command == "d") {
