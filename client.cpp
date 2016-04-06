@@ -216,6 +216,7 @@ private:
         std::string basep = base;
         if (base.front() == '\"' && base.back() == '\"') {
             basep = base.substr(1, base.length() - 2);
+            return basep;
         }
         std::string ret = "";
         bool backSlashFlag = false;
@@ -231,7 +232,6 @@ private:
         }
         if (backSlashFlag) {
             ret += " ";
-            backSlashFlag = false;
         }
         return ret;
     }
@@ -299,7 +299,7 @@ void printInfo();
 void trimNewLine(char* str);
 std::string toLowerString(const std::string& src);
 std::string trimSpaceLE(const std::string& str);
-std::string nextArgument(FILE* fp);
+std::string nextArgument(std::string& base);
 
 int main(int argc, char const *argv[])
 {
@@ -374,13 +374,17 @@ void TCPClient(const int& fd, const char* host) {
     std::string serverPath = ClientFunc::pwd(fd);
     WorkingDirectory wd;
     printInfo();
-    char userInput[maxn];
     while (true) {
         printf("%s:%s$ ", host, serverPath.c_str());
-        if (scanf("%s", userInput) != 1) {
+        // if (scanf("%s", userInputCStr) != 1) {
+        //     break;
+        // }
+        char userInputCStr[maxn];
+        if (!fgets(userInputCStr, maxn, stdin)) {
             break;
         }
-        std::string command = toLowerString(userInput);
+        std::string userInput = userInputCStr;
+        std::string command = nextArgument(userInput);
         if (command == "help") {
             printInfo();
         }
@@ -390,23 +394,91 @@ void TCPClient(const int& fd, const char* host) {
             break;
         }
         else if (command == "pwd") {
-            printf("%s\n", ClientFunc::pwd(fd).c_str());
+            std::string argu = nextArgument(userInput);
+            if (argu != "") {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: pwd\n");
+                    printf("Print current working directory.\n");
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                printf("%s\n", ClientFunc::pwd(fd).c_str());
+            }
         }
         else if (command == "ls") {
-            printf("%s\n", ClientFunc::ls(fd).c_str());
+            std::string argu = nextArgument(userInput);
+            if (argu != "") {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: ls\n");
+                    printf("List information about the FILEs in the current directory.\n");
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                printf("%s\n", ClientFunc::ls(fd).c_str());
+            }
         }
         else if (command == "cd") {
-            std::string argu = nextArgument(stdin);
-            ClientFunc::cd(fd, argu);
-            serverPath = ClientFunc::pwd(fd);
+            std::string argu = nextArgument(userInput);
+            if (argu == "" || argu[0] == '-') {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: cd <path>\n");
+                    printf("Change working directory to <path>.\n");
+                }
+                else if (argu == "") {
+                    continue;
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                ClientFunc::cd(fd, argu);
+                serverPath = ClientFunc::pwd(fd);
+            }
         }
         else if (command == "u") {
-            std::string argu = nextArgument(stdin);
-            ClientFunc::u(fd, argu, wd);
+            std::string argu = nextArgument(userInput);
+            if (argu == "" || argu[0] == '-') {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: u <file>\n");
+                    printf("Upload file(path related to application directory) to Remote Server.\n");
+                }
+                else if (argu == "") {
+                    printf("usage: u <file>\n");
+                    continue;
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                ClientFunc::u(fd, argu, wd);
+            }
         }
         else if (command == "d") {
-            std::string argu = nextArgument(stdin);
-            ClientFunc::d(fd, argu, wd);
+            std::string argu = nextArgument(userInput);
+            if (argu == "" || argu[0] == '-') {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: d <file>\n");
+                    printf("Download file(path related to working directory at server) to Download.\n");
+                }
+                else if (argu == "") {
+                    printf("usage: d <file>\n");
+                    continue;
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                ClientFunc::d(fd, argu, wd);
+            }
         }
         else {
             fprintf(stderr, "%s: Command not found\n", command.c_str());
@@ -416,13 +488,15 @@ void TCPClient(const int& fd, const char* host) {
 
 void printInfo() {
     puts("");
-    puts("pwd: print current working directory (remote)");
-    puts("ls: list information about the files (in current directory) (remote)");
-    puts("cd <path>: change working directory (remote)");
-    puts("u <filepath>: upload file to the working directory (remote)");
-    puts("d <filepath>: download file to Download Folder (local)");
+    puts("pwd: print current working directory");
+    puts("ls: list information about the files (in current directory)");
+    puts("cd <path>: change working directory");
+    puts("u <filepath>: upload file to remote server");
+    puts("d <filepath>: download file from server");
     puts("exit: quit");
     puts("help: information");
+    puts("");
+    puts("use <command> -h or <command> --help for more information");
     puts("");
 }
 
@@ -457,14 +531,46 @@ std::string toLowerString(const std::string& src) {
     return ret;
 }
 
-std::string nextArgument(FILE* fp) {
-    char argu[maxn];
-    if (!fgets(argu, maxn, fp)) {
-        fprintf(stderr, "Read Command Error\n");
-        exit(EXIT_FAILURE);
+std::string nextArgument(std::string& base) {
+    std::string ret = "";
+    while (base.length() > 0) {
+        char arguCStr[maxn];
+        memset(arguCStr, 0, sizeof(char) * maxn);
+        sscanf(base.c_str(), "%s", arguCStr);
+        if (strlen(arguCStr) == 0) {
+            base = "";
+            break;
+        }
+        std::string argu(arguCStr);
+        if (argu.front() == '\"') {
+            unsigned startp = base.find("\"");
+            unsigned endp = startp + 1;
+            while (endp < base.length() && base[endp] != '\"') {
+                ++endp;
+            }
+            if (endp < base.length() && base[endp] == '\"') {
+                ++endp;
+            }
+            ret.append(base.substr(startp, endp - startp));
+            if (endp >= base.length()) {
+                base = "";
+            }
+            else {
+                base = base.substr(endp);
+            }
+            break;
+        }
+        else {
+            ret.append(argu);
+            base = base.substr(base.find(argu) + argu.length());
+            if (ret.back() == '\\') {
+                ret += " ";
+            }
+            else {
+                break;
+            }
+        }
     }
-    trimNewLine(argu);
-    std::string arguStr(argu);
-    arguStr = trimSpaceLE(arguStr);
-    return arguStr;
+    ret = trimSpaceLE(ret);
+    return ret;
 }

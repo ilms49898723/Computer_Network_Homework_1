@@ -217,6 +217,7 @@ private:
         std::string basep = base;
         if (base.front() == '\"' && base.back() == '\"') {
             basep = base.substr(1, base.length() - 2);
+            return basep;
         }
         std::string ret = "";
         bool backSlashFlag = false;
@@ -232,7 +233,6 @@ private:
         }
         if (backSlashFlag) {
             ret += " ";
-            backSlashFlag = false;
         }
         return ret;
     }
