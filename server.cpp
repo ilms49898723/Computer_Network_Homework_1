@@ -151,6 +151,7 @@ public:
         else {
             filename = wd.getStartupPath() + "/Upload/" + filename;
         }
+        printf("Opening File: %s\n", filename.c_str());
         FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
             cleanBuffer(buffer);
@@ -172,10 +173,41 @@ public:
     static void d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         const std::string nargu = processArgument(argu);
         char buffer[maxn];
+        int chk = isExist(nargu);
+        if (chk == -2) {
+            cleanBuffer(buffer);
+            sprintf(buffer, "UNKNOWN_ERROR");
+            birdWrite(fd, buffer);
+            return;
+        }
+        else if (chk == -1) {
+            cleanBuffer(buffer);
+            sprintf(buffer, "PERMISSION_DENIED");
+            birdWrite(fd, buffer);
+            return;
+        }
+        else if (chk == 0) {
+            cleanBuffer(buffer);
+            sprintf(buffer, "FILE_NOT_EXIST");
+            birdWrite(fd, buffer);
+            return;
+        }
+        else if (chk == 2) {
+            cleanBuffer(buffer);
+            sprintf(buffer, "IS_DIR");
+            birdWrite(fd, buffer);
+            return;
+        }
+        else if (chk == 3) {
+            cleanBuffer(buffer);
+            sprintf(buffer, "NOT_REGULAR_FILE");
+            birdWrite(fd, buffer);
+            return;
+        }
         FILE* fp = fopen(nargu.c_str(), "rb");
         if (!fp) {
             cleanBuffer(buffer);
-            sprintf(buffer, "FILE_NOT_EXIST");
+            sprintf(buffer, "UNKNOWN_ERROR");
             birdWrite(fd, buffer);
             return;
         }
@@ -208,6 +240,30 @@ public:
     }
 
 private:
+    // return -2: error, -1: no permission 0: don't exist, 1: regluar file, 2: directory, 3: other
+    static int isExist(const std::string& filePath) {
+        struct stat st;
+        if (lstat(filePath.c_str(), &st) != 0) {
+            if (errno == ENOENT) {
+                return 0;
+            }
+            else if (errno == EACCES) {
+                return -1;
+            }
+            else {
+                return -2;
+            }
+        }
+        if (S_ISREG(st.st_mode)) {
+            return 1;
+        }
+        else if (S_ISDIR(st.st_mode)) {
+            return 2;
+        }
+        else {
+            return 3;
+        }
+    }
     static std::string getFileName(const std::string& filePath) {
         unsigned pos = filePath.rfind("/");
         if (pos + 1 >= filePath.length()) {

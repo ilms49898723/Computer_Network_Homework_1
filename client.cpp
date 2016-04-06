@@ -136,9 +136,26 @@ public:
     }
     static bool u(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         const std::string nargu = processArgument(argu);
+        int chk = isExist(nargu);
+        if (chk == -2) {
+            fprintf(stderr, "%s: Unknown Error\n", nargu.c_str());
+            return false;
+        }
+        else if (chk == -1) {
+            fprintf(stderr, "%s: Permission denied\n", nargu.c_str());
+            return false;
+        }
+        else if (chk == 0) {
+            fprintf(stderr, "%s: File not exists\n", nargu.c_str());
+            return false;
+        }
+        else if (chk == 2) {
+            fprintf(stderr, "%s is a directory\n", nargu.c_str());
+            return false;
+        }
         FILE* fp = fopen(nargu.c_str(), "rb");
         if (!fp) {
-            fprintf(stderr, "%s: File not exists\n", nargu.c_str());
+            fprintf(stderr, "%s: Unknown Error\n", nargu.c_str());
             return false;
         }
         unsigned long fileSize;
@@ -174,8 +191,24 @@ public:
         birdWrite(fd, buffer);
         cleanBuffer(buffer);
         birdRead(fd, buffer);
-        if (std::string(buffer) == "FILE_NOT_EXIST") {
-            fprintf(stderr, "%s: File Not Exists On Remote Server\n", nargu.c_str());
+        if (std::string(buffer) == "UNKNOWN_ERROR") {
+            fprintf(stderr, "Unknown Error on Remote Server\n");
+            return false;
+        }
+        else if (std::string(buffer) == "PERMISSION_DENIED") {
+            fprintf(stderr, "%s: Permission denied on Remote Server\n", nargu.c_str());
+            return false;
+        }
+        else if (std::string(buffer) == "FILE_NOT_EXIST") {
+            fprintf(stderr, "%s: File Not Exists on Remote Server\n", nargu.c_str());
+            return false;
+        }
+        else if (std::string(buffer) == "IS_DIR") {
+            fprintf(stderr, "%s is a directory\n", nargu.c_str());
+            return false;
+        }
+        else if (std::string(buffer) == "NOT_REGULAR_FILE") {
+            fprintf(stderr, "%s: Not a regular file\n", nargu.c_str());
             return false;
         }
         std::string filename = getFileName(nargu);
@@ -208,6 +241,30 @@ public:
     }
 
 private:
+    // return -2: error, -1: no permission 0: don't exist, 1: regular file, 2: directory, 3: other
+    static int isExist(const std::string& filePath) {
+        struct stat st;
+        if (lstat(filePath.c_str(), &st) != 0) {
+            if (errno == ENOENT) {
+                return 0;
+            }
+            else if (errno == EACCES) {
+                return -1;
+            }
+            else {
+                return -2;
+            }
+        }
+        if (S_ISREG(st.st_mode)) {
+            return 1;
+        }
+        else if (S_ISDIR(st.st_mode)) {
+            return 2;
+        }
+        else {
+            return 3;
+        }
+    }
     static std::string getFileName(const std::string& filePath) {
         unsigned pos = filePath.rfind("/");
         if (pos + 1 >= filePath.length()) {
