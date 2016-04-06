@@ -134,7 +134,7 @@ public:
             printf("%s\n", buffer);
         }
     }
-    static bool u(const int& fd, const std::string& argu) {
+    static bool u(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
         const std::string nargu = processArgument(argu);
         int chk = isExist(nargu);
         if (chk == -2) {
@@ -177,8 +177,15 @@ public:
             fclose(fp);
             return false;
         }
+        std::string fileLocate;
+        if (wd.getStartupPath().back() == '/') {
+            fileLocate = wd.getStartupPath();
+        }
+        else {
+            fileLocate = wd.getStartupPath() + "/";
+        }
         printf("Upload File \"%s\"\n", nargu.c_str());
-        printf("File Location: %s\n", argu.substr(0, argu.find(nargu)).c_str());
+        printf("File Location: %s\n", fileLocate.c_str());
         cleanBuffer(buffer);
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
@@ -532,7 +539,7 @@ void TCPClient(const int& fd, const char* host) {
                 }
             }
             else {
-                ClientFunc::u(fd, argu);
+                ClientFunc::u(fd, argu, wd);
             }
         }
         else if (command == "d") {

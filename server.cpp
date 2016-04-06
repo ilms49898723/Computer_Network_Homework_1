@@ -535,6 +535,9 @@ void sigChld(int signo) {
     pid_t pid;
     int stat;
     while ((pid = waitpid(-1, &stat, WCONTINUED)) != -1) {
-        fprintf(stdout, "Child Process %d terminated.\n", static_cast<int>(pid));
+        std::string buffer = "Child Process " + std::to_string(static_cast<int>(pid)) + " terminated.\n";
+        if (write(fileno(stdout), buffer.c_str(), buffer.length()) < 0) {
+            exit(EXIT_FAILURE);
+        }
     }
 }
