@@ -146,11 +146,15 @@ public:
             return false;
         }
         else if (chk == 0) {
-            fprintf(stderr, "%s: File not exists\n", nargu.c_str());
+            fprintf(stderr, "%s: No such file or directory\n", nargu.c_str());
             return false;
         }
         else if (chk == 2) {
             fprintf(stderr, "%s is a directory\n", nargu.c_str());
+            return false;
+        }
+        else if (chk == 3) {
+            fprintf(stderr, "%s is not a regular file\n", nargu.c_str());
             return false;
         }
         FILE* fp = fopen(nargu.c_str(), "rb");
@@ -169,11 +173,12 @@ public:
         cleanBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) == "ERROR_OPEN_FILE") {
-            fprintf(stderr, "Can not open file %s on Remote Server\n", getFileName(argu.c_str()).c_str());
+            fprintf(stderr, "Can not open file \"%s\" on Remote Server\n", getFileName(argu.c_str()).c_str());
             fclose(fp);
             return false;
         }
         printf("Upload File \"%s\"\n", nargu.c_str());
+        printf("File Location: %s\n", argu.substr(0, argu.find(nargu)).c_str());
         cleanBuffer(buffer);
         sprintf(buffer, "filesize = %lu", fileSize);
         birdWrite(fd, buffer);
@@ -192,15 +197,15 @@ public:
         cleanBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) == "UNKNOWN_ERROR") {
-            fprintf(stderr, "Unknown Error on Remote Server\n");
+            fprintf(stderr, "Unknown Error\n");
             return false;
         }
         else if (std::string(buffer) == "PERMISSION_DENIED") {
-            fprintf(stderr, "%s: Permission denied on Remote Server\n", nargu.c_str());
+            fprintf(stderr, "%s: Permission denied\n", nargu.c_str());
             return false;
         }
         else if (std::string(buffer) == "FILE_NOT_EXIST") {
-            fprintf(stderr, "%s: File Not Exists on Remote Server\n", nargu.c_str());
+            fprintf(stderr, "%s: No such file or directory\n", nargu.c_str());
             return false;
         }
         else if (std::string(buffer) == "IS_DIR") {
@@ -208,15 +213,18 @@ public:
             return false;
         }
         else if (std::string(buffer) == "NOT_REGULAR_FILE") {
-            fprintf(stderr, "%s: Not a regular file\n", nargu.c_str());
+            fprintf(stderr, "%s is not a regular file\n", nargu.c_str());
             return false;
         }
         std::string filename = getFileName(nargu);
+        std::string targetFolder;
         if (wd.getStartupPath().back() == '/') {
             filename = wd.getStartupPath() + "Download/" + filename;
+            targetFolder = wd.getStartupPath() + "Download/";
         }
         else {
             filename = wd.getStartupPath() + "/Download/" + filename;
+            targetFolder = wd.getStartupPath() + "/Download/";
         }
         FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
@@ -230,6 +238,7 @@ public:
         sprintf(buffer, "OK");
         birdWrite(fd, buffer);
         printf("Download File \"%s\"\n", getFileName(nargu).c_str());
+        printf("Download Folder: %s\n", targetFolder.c_str());
         unsigned long fileSize;
         birdRead(fd, buffer);
         sscanf(buffer, "%*s%*s%lu", &fileSize);
@@ -431,7 +440,10 @@ void closeClient(const int& fd) {
 
 void init() {
     if (!WorkingDirectory::isDirExist("./Download")) {
-        mkdir("Download", 0777);
+        if (mkdir("Download", 0777) < 0) {
+            fprintf(stderr, "Error: mkdir: %s: %s\n", "Download", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -441,9 +453,6 @@ void TCPClient(const int& fd, const char* host) {
     printInfo();
     while (true) {
         printf("%s:%s$ ", host, serverPath.c_str());
-        // if (scanf("%s", userInputCStr) != 1) {
-        //     break;
-        // }
         char userInputCStr[maxn];
         if (!fgets(userInputCStr, maxn, stdin)) {
             break;
@@ -554,7 +563,7 @@ void TCPClient(const int& fd, const char* host) {
 void printInfo() {
     puts("");
     puts("pwd: print current working directory");
-    puts("ls: list information about the files (in current directory)");
+    puts("ls: list information about the files in current directory");
     puts("cd <path>: change working directory");
     puts("u <filepath>: upload file to remote server");
     puts("d <filepath>: download file from server");

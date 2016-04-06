@@ -74,7 +74,7 @@ private:
     void updatePath() {
         char buffer[maxn];
         if (!getcwd(buffer, maxn)) {
-            fprintf(stderr, "getcwd Error\n");
+            fprintf(stderr, "getcwd Error\nProgram Terminated!\n");
             exit(EXIT_FAILURE);
         }
         path = buffer;
@@ -151,7 +151,6 @@ public:
         else {
             filename = wd.getStartupPath() + "/Upload/" + filename;
         }
-        printf("Opening File: %s\n", filename.c_str());
         FILE* fp = fopen(filename.c_str(), "w");
         if (!fp) {
             cleanBuffer(buffer);
@@ -398,7 +397,7 @@ int main(int argc, char const *argv[])
             exit(EXIT_SUCCESS);
         }
         else {
-            fprintf(stdout, "Start child Process pid = %d\n", static_cast<int>(childPid));
+            fprintf(stdout, "Start Child Process pid = %d\n", static_cast<int>(childPid));
         }
         close(clientfd);
     }
@@ -439,7 +438,10 @@ int serverInit(const int& port) {
 
 void init() {
     if (!WorkingDirectory::isDirExist("./Upload")) {
-        mkdir("Upload", 0777);
+        if (mkdir("Upload", 0777) < 0) {
+            fprintf(stderr, "Error: mkdir: %s: %s\n", "Upload", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -533,6 +535,6 @@ void sigChld(int signo) {
     pid_t pid;
     int stat;
     while ((pid = waitpid(-1, &stat, WCONTINUED)) != -1) {
-        fprintf(stdout, "Child process %d terminated.\n", static_cast<int>(pid));
+        fprintf(stdout, "Child Process %d terminated.\n", static_cast<int>(pid));
     }
 }
