@@ -134,7 +134,7 @@ public:
             printf("%s\n", buffer);
         }
     }
-    static bool u(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
+    static bool u(const int& fd, const std::string& argu) {
         const std::string nargu = processArgument(argu);
         int chk = isExist(nargu);
         if (chk == -2) {
@@ -266,7 +266,7 @@ private:
         }
     }
     static std::string getFileName(const std::string& filePath) {
-        unsigned pos = filePath.rfind("/");
+        unsigned long pos = filePath.rfind("/");
         if (pos + 1 >= filePath.length()) {
             return "";
         }
@@ -523,7 +523,7 @@ void TCPClient(const int& fd, const char* host) {
                 }
             }
             else {
-                ClientFunc::u(fd, argu, wd);
+                ClientFunc::u(fd, argu);
             }
         }
         else if (command == "d") {

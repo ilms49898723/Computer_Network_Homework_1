@@ -170,7 +170,7 @@ public:
         birdReadFile(fd, fp, fileSize);
         fclose(fp);
     }
-    static void d(const int& fd, const std::string& argu, const WorkingDirectory& wd) {
+    static void d(const int& fd, const std::string& argu) {
         const std::string nargu = processArgument(argu);
         char buffer[maxn];
         int chk = isExist(nargu);
@@ -265,7 +265,7 @@ private:
         }
     }
     static std::string getFileName(const std::string& filePath) {
-        unsigned pos = filePath.rfind("/");
+        unsigned long pos = filePath.rfind("/");
         if (pos + 1 >= filePath.length()) {
             return "";
         }
@@ -489,7 +489,7 @@ void TCPServer(const int& fd) {
             else {
                 std::string argu(command.c_str() + 1);
                 argu = trimSpaceLE(argu);
-                ServerFunc::d(fd, argu, wd);
+                ServerFunc::d(fd, argu);
             }
         }
         else {
