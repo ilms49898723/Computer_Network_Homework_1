@@ -360,6 +360,7 @@ private:
 };
 
 bool isValidArguments(int argc, char const *argv[]);
+bool isAllSpace(const char* str);
 int clientInit(const char* addr, const int& port);
 void closeClient(const int& fd);
 void init();
@@ -402,6 +403,15 @@ bool isValidArguments(int argc, char const *argv[]) {
     for (const char* ptr = argv[2]; *ptr; ++ptr) {
         if (!isdigit(*ptr)) {
             fprintf(stderr, "%s is not a number\n", argv[2]);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool isAllSpace(const char* str) {
+    for (int i = 0; str[i]; ++i) {
+        if (str[i] != ' ' && str[i] != '\t' && str[i] != '\n') {
             return false;
         }
     }
@@ -452,7 +462,7 @@ void TCPClient(const int& fd, const char* host) {
         if (!fgets(userInputCStr, maxn, stdin)) {
             break;
         }
-        if (!strcmp(userInputCStr, "\n")) {
+        if (!strcmp(userInputCStr, "\n") || isAllSpace(userInputCStr)) {
             continue;
         }
         std::string userInput = userInputCStr;
