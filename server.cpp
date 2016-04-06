@@ -328,9 +328,10 @@ int main(int argc, char const *argv[])
             char clientInfo[1024];
             strcpy(clientInfo, inet_ntoa(clientAddr.sin_addr));
             int clientPort = static_cast<int>(clientAddr.sin_port);
-            fprintf(stdout, "Connection from %s port %d\n", clientInfo, clientPort);
+            fprintf(stdout, "Connection from %s, port %d\n", clientInfo, clientPort);
             TCPServer(clientfd);
             close(clientfd);
+            fprintf(stdout, "Client %s terminated\n", clientInfo);
             exit(EXIT_SUCCESS);
         }
         else {
