@@ -452,6 +452,9 @@ void TCPClient(const int& fd, const char* host) {
         if (!fgets(userInputCStr, maxn, stdin)) {
             break;
         }
+        if (!strcmp(userInputCStr, "\n")) {
+            continue;
+        }
         std::string userInput = userInputCStr;
         std::string command = nextArgument(userInput);
         if (command == "help") {
