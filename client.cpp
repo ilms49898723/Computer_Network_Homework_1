@@ -552,6 +552,7 @@ void TCPClient(const int& fd, const char* host) {
                     for (const auto& i : fileList) {
                         printf("%s\n", i.c_str());
                     }
+                    closedir(dir);
                 }
             }
         }

@@ -233,6 +233,7 @@ public:
         cleanBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) == "ERROR_OPEN_FILE") {
+            fclose(fp);
             return;
         }
         unsigned long fileSize;
