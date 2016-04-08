@@ -19,6 +19,8 @@
 #include <ctime>
 #include <cctype>
 #include <string>
+#include <vector>
+#include <algorithm>
 
 constexpr int maxn = 2048;
 
@@ -490,19 +492,92 @@ void TCPClient(const int& fd, const char* host) {
         std::string userInput = userInputCStr;
         std::string command = nextArgument(userInput);
         if (command == "help") {
-            printInfo();
+            std::string argu = nextArgument(userInput);
+            if (argu != "") {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: help\n");
+                    printf("Print help information.\n");
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                printInfo();
+            }
+        }
+        else if (command == "lpwd") {
+            std::string argu = nextArgument(userInput);
+            if (argu != "") {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: lpwd\n");
+                    printf("Print local current working directory.\n");
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                printf("%s\n", wd.getPath().c_str());
+            }
+        }
+        else if (command == "lls") {
+            std::string argu = nextArgument(userInput);
+            if (argu != "") {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: lpwd\n");
+                    printf("List information about the files in the local current directory.\n");
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                DIR* dir = opendir(wd.getPath().c_str());
+                if (!dir) {
+                    fprintf(stderr, "%s: Cannot open the directory\n", wd.getPath().c_str());
+                    continue;
+                }
+                else {
+                    dirent *dirst;
+                    std::vector<std::string> fileList;
+                    while ((dirst = readdir(dir))) {
+                        std::string name(dirst->d_name);
+                        if (dirst->d_type == DT_DIR) {
+                            name += "/";
+                        }
+                        fileList.push_back(name);
+                    }
+                    std::sort(fileList.begin(), fileList.end());
+                    for (const auto& i : fileList) {
+                        printf("%s\n", i.c_str());
+                    }
+                }
+            }
         }
         else if (command == "exit") {
-            ClientFunc::q(fd);
-            printf("\nConnection Terminated\n\n");
-            break;
+            std::string argu = nextArgument(userInput);
+            if (argu != "") {
+                if (argu == "-h" || argu == "-help" || argu == "--help") {
+                    printf("usage: exit\n");
+                    printf("Terminate the connection.\n");
+                }
+                else {
+                    fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
+                }
+            }
+            else {
+                ClientFunc::q(fd);
+                printf("\nConnection Terminated\n\n");
+                break;
+            }
         }
         else if (command == "pwd") {
             std::string argu = nextArgument(userInput);
             if (argu != "") {
                 if (argu == "-h" || argu == "-help" || argu == "--help") {
                     printf("usage: pwd\n");
-                    printf("Print current working directory.\n");
+                    printf("Print current working directory on Remote Server.\n");
                 }
                 else {
                     fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
@@ -517,7 +592,7 @@ void TCPClient(const int& fd, const char* host) {
             if (argu != "") {
                 if (argu == "-h" || argu == "-help" || argu == "--help") {
                     printf("usage: ls\n");
-                    printf("List information about the files in the current directory.\n");
+                    printf("List information about the files in the current directory on Remote Server.\n");
                 }
                 else {
                     fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());
@@ -532,7 +607,10 @@ void TCPClient(const int& fd, const char* host) {
             if (argu == "" || argu[0] == '-') {
                 if (argu == "-h" || argu == "-help" || argu == "--help") {
                     printf("usage: cd <path>\n");
-                    printf("Change working directory to <path>.\n");
+                    printf("Change working directory to <path> on Remote Server.\n");
+                    printf("ex:\n");
+                    printf("    cd \"Network Programming\"\n");
+                    printf("    cd ../Download\n");
                 }
                 else if (argu == "") {
                     continue;
@@ -552,9 +630,12 @@ void TCPClient(const int& fd, const char* host) {
                 if (argu == "-h" || argu == "-help" || argu == "--help") {
                     printf("usage: u <file>\n");
                     printf("Upload file(path related to application directory) to Remote Server.\n");
+                    printf("ex:\n");
+                    printf("    u hw1.tar\n");
+                    printf("    u ../client.cpp\n");
                 }
                 else if (argu == "") {
-                    printf("usage: u <file>\n");
+                    printf("usage: u <file>\nu --help for more information\n");
                     continue;
                 }
                 else {
@@ -571,9 +652,12 @@ void TCPClient(const int& fd, const char* host) {
                 if (argu == "-h" || argu == "-help" || argu == "--help") {
                     printf("usage: d <file>\n");
                     printf("Download file(path related to working directory at server) to Download.\n");
+                    printf("ex:\n");
+                    printf("    d hw1.tar\n");
+                    printf("    d ../server.cpp\n");
                 }
                 else if (argu == "") {
-                    printf("usage: d <file>\n");
+                    printf("usage: d <file>\nd --help for more information\n");
                     continue;
                 }
                 else {
@@ -592,13 +676,19 @@ void TCPClient(const int& fd, const char* host) {
 
 void printInfo() {
     puts("");
-    puts("pwd: print current working directory");
-    puts("ls: list information about the files in current directory");
-    puts("cd <path>: change working directory");
-    puts("u <filepath>: upload file to remote server");
-    puts("d <filepath>: download file from server");
-    puts("exit: quit");
-    puts("help: information");
+    puts("Avaliable Commands:");
+    puts("");
+    puts("    lpwd: print current working directory(local)");
+    puts("    lls: list information about the files in current directory(local)");
+    puts("");
+    puts("    pwd: print current working directory on remote server");
+    puts("    ls: list information about the files in current directory on remote server");
+    puts("    cd <path>: change working directory on remote server");
+    puts("    u <file>: upload file to remote server");
+    puts("    d <file>: download file from server");
+    puts("    exit: terminate connection");
+    puts("");
+    puts("    help: print information");
     puts("");
     puts("use <command> -h or <command> --help for more information");
     puts("");
