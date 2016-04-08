@@ -677,7 +677,7 @@ void TCPClient(const int& fd, const char* host) {
 
 void printInfo() {
     puts("");
-    puts("Avaliable Commands:");
+    puts("Available Commands:");
     puts("");
     puts("    lpwd: print current working directory(local)");
     puts("    lls: list information about the files in current directory(local)");
