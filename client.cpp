@@ -630,7 +630,7 @@ void TCPClient(const int& fd, const char* host) {
             if (argu == "" || argu[0] == '-') {
                 if (argu == "-h" || argu == "-help" || argu == "--help") {
                     printf("usage: u <file>\n");
-                    printf("Upload file(path related to application directory) to Remote Server.\n");
+                    printf("Upload file(path related to local working directory) to Remote Server.\n");
                     printf("ex:\n");
                     printf("    u hw1.tar\n");
                     printf("    u ../client.cpp\n");
@@ -652,7 +652,7 @@ void TCPClient(const int& fd, const char* host) {
             if (argu == "" || argu[0] == '-') {
                 if (argu == "-h" || argu == "-help" || argu == "--help") {
                     printf("usage: d <file>\n");
-                    printf("Download file(path related to working directory at server) to Download.\n");
+                    printf("Download file(path related to working directory on server) to Download.\n");
                     printf("ex:\n");
                     printf("    d hw1.tar\n");
                     printf("    d ../server.cpp\n");
