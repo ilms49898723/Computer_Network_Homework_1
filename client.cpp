@@ -243,7 +243,7 @@ public:
         else {
             filename = wd.getStartupPath() + "/Download/" + filename;
         }
-        FILE* fp = fopen(filename.c_str(), "w");
+        FILE* fp = fopen(filename.c_str(), "wb");
         if (!fp) {
             fprintf(stderr, "%s: File Open Error\n", filename.c_str());
             cleanBuffer(buffer);

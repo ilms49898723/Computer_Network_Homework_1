@@ -172,7 +172,7 @@ public:
         else {
             filename = wd.getStartupPath() + "/Upload/" + filename;
         }
-        FILE* fp = fopen(filename.c_str(), "w");
+        FILE* fp = fopen(filename.c_str(), "wb");
         if (!fp) {
             cleanBuffer(buffer);
             sprintf(buffer, "ERROR_OPEN_FILE");
