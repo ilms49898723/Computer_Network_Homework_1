@@ -25,12 +25,27 @@ constexpr int maxn = 2048;
 class WorkingDirectory {
 public:
     static bool isDirExist(const std::string& path) {
-        DIR* dir = opendir(path.c_str());
-        if (dir) {
-            closedir(dir);
+        struct stat st;
+        if (lstat(path.c_str(), &st) != 0) {
+            if (errno == ENOENT) {
+                return false;
+            }
+            else if (errno == EACCES) {
+                return false;
+            }
+            else {
+                return false;
+            }
+        }
+        if (S_ISREG(st.st_mode)) {
+            return false;
+        }
+        else if (S_ISDIR(st.st_mode)) {
             return true;
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
 public:
@@ -58,6 +73,12 @@ public:
             }
             else if (errno == ENOTDIR) {
                 return newPath + " is not a directory";
+            }
+            else if (errno == EACCES) {
+                return newPath + ": Permission denied";
+            }
+            else {
+                return newPath + ": Unexpected error";
             }
         }
         updatePath();
@@ -138,7 +159,7 @@ public:
         const std::string nargu = processArgument(argu);
         int chk = isExist(nargu);
         if (chk == -2) {
-            fprintf(stderr, "%s: Unknown Error\n", nargu.c_str());
+            fprintf(stderr, "%s: Unexpected Error\n", nargu.c_str());
             return false;
         }
         else if (chk == -1) {
@@ -159,7 +180,7 @@ public:
         }
         FILE* fp = fopen(nargu.c_str(), "rb");
         if (!fp) {
-            fprintf(stderr, "%s: Unknown Error\n", nargu.c_str());
+            fprintf(stderr, "%s: Unexpected Error\n", nargu.c_str());
             return false;
         }
         unsigned long fileSize;
@@ -173,7 +194,7 @@ public:
         cleanBuffer(buffer);
         birdRead(fd, buffer);
         if (std::string(buffer) == "ERROR_OPEN_FILE") {
-            fprintf(stderr, "Can not open file \"%s\" on Remote Server\n", getFileName(argu.c_str()).c_str());
+            fprintf(stderr, "Cannot open file \"%s\" on Remote Server\n", getFileName(argu.c_str()).c_str());
             fclose(fp);
             return false;
         }
@@ -195,8 +216,8 @@ public:
         birdWrite(fd, buffer);
         cleanBuffer(buffer);
         birdRead(fd, buffer);
-        if (std::string(buffer) == "UNKNOWN_ERROR") {
-            fprintf(stderr, "Unknown Error\n");
+        if (std::string(buffer) == "UNEXPECTED_ERROR") {
+            fprintf(stderr, "Unexpected Error\n");
             return false;
         }
         else if (std::string(buffer) == "PERMISSION_DENIED") {
@@ -310,7 +331,7 @@ private:
     static int birdRead(const int& fd, char* buffer, const int& n = maxn) {
         int byteRead = read(fd, buffer, n);
         if (byteRead < 0) {
-            fprintf(stderr, "Read Error\n");
+            fprintf(stderr, "read() Error\n");
             exit(EXIT_FAILURE);
         }
         return byteRead;
@@ -318,7 +339,7 @@ private:
     static int birdWrite(const int& fd, const char* buffer, const int& n = maxn) {
         int byteWrite = write(fd, buffer, sizeof(char) * n);
         if (byteWrite < 0) {
-            fprintf(stderr, "Write Error\n");
+            fprintf(stderr, "write() Error\n");
             exit(EXIT_FAILURE);
         }
         return byteWrite;
@@ -352,7 +373,7 @@ private:
             byteWrite += n;
             int m = write(fileno(fp), buffer, n);
             if (m != n) {
-                fprintf(stderr, "Error When Writing File\n");
+                fprintf(stderr, "Error When Writing to File\n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -374,7 +395,7 @@ std::string nextArgument(std::string& base);
 int main(int argc, char const *argv[])
 {
     if (argc != 3) {
-        fprintf(stderr, "usage: %s SERVER_ADDRESS PORT\n", argv[0]);
+        fprintf(stderr, "usage: %s <server address> <port>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
     if (!isValidArguments(argc, argv)) {
@@ -385,6 +406,7 @@ int main(int argc, char const *argv[])
     int port;
     sscanf(argv[2], "%d", &port);
     int sockfd = clientInit(argv[1], port);
+    printf("\n\nNetwork Programming Homework 1\n\nConnected to %s:%s\n", argv[1], argv[2]);
     TCPClient(sockfd, argv[1]);
     closeClient(sockfd);
     return 0;
@@ -397,7 +419,7 @@ bool isValidArguments(int argc, char const *argv[]) {
     sockaddr_in tmp;
     memset(&tmp, 0, sizeof(tmp));
     if (inet_pton(AF_INET, argv[1], &tmp.sin_addr) <= 0) {
-        fprintf(stderr, "Inet_pton error for \"%s\"\n", argv[1]);
+        fprintf(stderr, "%s: Inet_pton error\n", argv[1]);
         return false;
     }
     for (const char* ptr = argv[2]; *ptr; ++ptr) {
@@ -429,7 +451,7 @@ int clientInit(const char* addr, const int& port) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(port);
     if (inet_pton(AF_INET, addr, &serverAddr.sin_addr) <= 0) {
-        fprintf(stderr, "Inet_pton Error for %s\n", addr);
+        fprintf(stderr, "%s: Inet_pton Error\n", addr);
         exit(EXIT_FAILURE);
     }
     if (connect(sockfd, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(sockaddr_in)) < 0) {
@@ -446,7 +468,7 @@ void closeClient(const int& fd) {
 void init() {
     if (!WorkingDirectory::isDirExist("./Download")) {
         if (mkdir("Download", 0777) < 0) {
-            fprintf(stderr, "Error: mkdir: %s: %s\n", "Download", strerror(errno));
+            fprintf(stderr, "Error: mkdir %s: %s\n", "Download", strerror(errno));
             exit(EXIT_FAILURE);
         }
     }
@@ -495,7 +517,7 @@ void TCPClient(const int& fd, const char* host) {
             if (argu != "") {
                 if (argu == "-h" || argu == "-help" || argu == "--help") {
                     printf("usage: ls\n");
-                    printf("List information about the FILEs in the current directory.\n");
+                    printf("List information about the files in the current directory.\n");
                 }
                 else {
                     fprintf(stderr, "Unrecognized Argument %s\n", argu.c_str());

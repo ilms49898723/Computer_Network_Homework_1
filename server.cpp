@@ -27,12 +27,27 @@ constexpr int maxn = 2048;
 class WorkingDirectory {
 public:
     static bool isDirExist(const std::string& path) {
-        DIR* dir = opendir(path.c_str());
-        if (dir) {
-            closedir(dir);
+        struct stat st;
+        if (lstat(path.c_str(), &st) != 0) {
+            if (errno == ENOENT) {
+                return false;
+            }
+            else if (errno == EACCES) {
+                return false;
+            }
+            else {
+                return false;
+            }
+        }
+        if (S_ISREG(st.st_mode)) {
+            return false;
+        }
+        else if (S_ISDIR(st.st_mode)) {
             return true;
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
 public:
@@ -60,6 +75,12 @@ public:
             }
             else if (errno == ENOTDIR) {
                 return newPath + " is not a directory";
+            }
+            else if (errno == EACCES) {
+                return newPath + ": Permission denied";
+            }
+            else {
+                return newPath + ": Unexpected error";
             }
         }
         updatePath();
@@ -107,7 +128,7 @@ public:
         if (!dir) {
             char buffer[maxn];
             cleanBuffer(buffer);
-            sprintf(buffer, "Open directory Error!");
+            sprintf(buffer, "%s: Cannot open the directory", wd.getPath().c_str());
             birdWrite(fd, buffer);
         }
         else {
@@ -175,7 +196,7 @@ public:
         int chk = isExist(nargu);
         if (chk == -2) {
             cleanBuffer(buffer);
-            sprintf(buffer, "UNKNOWN_ERROR");
+            sprintf(buffer, "UNEXPECTED_ERROR");
             birdWrite(fd, buffer);
             return;
         }
@@ -206,7 +227,7 @@ public:
         FILE* fp = fopen(nargu.c_str(), "rb");
         if (!fp) {
             cleanBuffer(buffer);
-            sprintf(buffer, "UNKNOWN_ERROR");
+            sprintf(buffer, "UNEXPECTED_ERROR");
             birdWrite(fd, buffer);
             return;
         }
@@ -304,7 +325,7 @@ private:
     static int birdRead(const int& fd, char* buffer, const int& n = maxn) {
         int byteRead = read(fd, buffer, n);
         if (byteRead < 0) {
-            fprintf(stderr, "Read Error\n");
+            fprintf(stderr, "read() Error\n");
             exit(EXIT_FAILURE);
         }
         return byteRead;
@@ -312,7 +333,7 @@ private:
     static int birdWrite(const int& fd, const char* buffer, const int& n = maxn) {
         int byteWrite = write(fd, buffer, sizeof(char) * n);
         if (byteWrite < 0) {
-            fprintf(stderr, "Write Error\n");
+            fprintf(stderr, "write() Error\n");
             exit(EXIT_FAILURE);
         }
         return byteWrite;
@@ -346,7 +367,7 @@ private:
             byteWrite += n;
             int m = write(fileno(fp), buffer, n);
             if (m != n) {
-                fprintf(stderr, "Error When Writing File\n");
+                fprintf(stderr, "Error When Writing to File\n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -365,7 +386,7 @@ void sigChld(int signo);
 int main(int argc, char const *argv[])
 {
     if (argc != 2) {
-        fprintf(stderr, "usage: %s SERVER_ADDRESS PORT\n", argv[0]);
+        fprintf(stderr, "usage: %s <port>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
     if (!isValidArguments(argc, argv)) {
@@ -439,7 +460,7 @@ int serverInit(const int& port) {
 void init() {
     if (!WorkingDirectory::isDirExist("./Upload")) {
         if (mkdir("Upload", 0777) < 0) {
-            fprintf(stderr, "Error: mkdir: %s: %s\n", "Upload", strerror(errno));
+            fprintf(stderr, "Error: mkdir %s: %s\n", "Upload", strerror(errno));
             exit(EXIT_FAILURE);
         }
     }
