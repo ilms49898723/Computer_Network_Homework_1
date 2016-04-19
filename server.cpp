@@ -394,7 +394,7 @@ int main(int argc, char const *argv[])
     sscanf(argv[1], "%d", &port);
     int listenId = serverInit(port);
     // signal
-    signal(SIGCHLD, sigChld);
+    // signal(SIGCHLD, sigChld);
     // wait for connection, then fork for per client
     while (true) {
         pid_t childPid;
