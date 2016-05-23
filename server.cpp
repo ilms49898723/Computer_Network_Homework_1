@@ -412,9 +412,6 @@ int main(int argc, char const *argv[])
             fprintf(stdout, "Client %s:%d terminated\n", clientInfo, clientPort);
             exit(EXIT_SUCCESS);
         }
-        else {
-            fprintf(stdout, "Start Child Process pid = %d\n", static_cast<int>(childPid));
-        }
         close(clientfd);
     }
     return 0;
